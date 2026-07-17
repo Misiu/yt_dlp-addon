@@ -30,7 +30,7 @@ YouTube Audio Downloader is a Home Assistant App (the feature was formerly calle
 
 - Ready-to-run `amd64` and `aarch64` images with ffmpeg, Node/EJS challenge support, and all runtime dependencies, published as one GHCR multi-architecture manifest.
 - Strict HTTPS YouTube URL allowlist, playlist prevention, path containment, bounded metadata/cover handling, and no user-supplied downloader arguments.
-- Durable FIFO queue and history with restart recovery, cancellation, pagination, filtering, and stable error codes.
+- Durable FIFO queue and history with restart recovery, cancellation, pagination, filtering, stable error codes, and SSE signals for each completed file and a drained queue.
 - Responsive English/Polish Lit interface with Web Awesome, SSE updates, dark mode, keyboard support, and Ingress-safe relative URLs.
 - Atomic MP3 publication, filename collision handling, ID3v2.3 tags, optional JPEG cover, disk-space check, timeouts, and stale-temp cleanup.
 - Least-privilege Home Assistant configuration: no Supervisor/Core API, host network, devices, or privileged capabilities.
@@ -48,7 +48,7 @@ YouTube Audio Downloader is a Home Assistant App (the feature was formerly calle
 7. Enable **Show in sidebar** on the app Info page if you want a permanent **YouTube Audio** sidebar entry.
 8. Click **Open Web UI** or use that sidebar entry.
 
-Version 0.1.6 is marked **experimental** until its Ingress, AppArmor, backup, download, integration discovery, and update paths have been verified on a real Home Assistant OS test instance.
+Version 0.1.7 is marked **experimental** until its Ingress, AppArmor, backup, download, integration discovery, and update paths have been verified on a real Home Assistant OS test instance.
 
 To add it manually, open the App store repository dialog and enter:
 

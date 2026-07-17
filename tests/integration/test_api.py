@@ -44,7 +44,7 @@ def test_health_and_effective_config(tmp_path: Path) -> None:
     with ingress_client(make_app(tmp_path)) as client:
         health = client.get("/api/health")
         assert health.status_code == 200
-        assert health.json() == {"status": "ok", "version": "0.1.6"}
+        assert health.json() == {"status": "ok", "version": "0.1.7"}
         config = client.get("/api/v1/config").json()
         assert config["output_directory"] == "youtube_audio"
         assert config["download_attempts"] == 3

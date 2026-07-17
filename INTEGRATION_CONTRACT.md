@@ -49,7 +49,7 @@ Required endpoints:
 
 API error bodies are always `{"error":{"code":"...","message":"..."}}`. HTTP 401 means the integration token is missing or invalid. Validation and queue conflicts use HTTP 4xx; transport/server failures use standard HTTP 5xx.
 
-SSE event names are `status`, `queue_changed`, `job_updated`, `job_completed`, `job_failed`, and `history_changed`. Job events contain `{"job": <full Job object>}`. Use REST for the initial snapshot and reconciliation, then SSE for immediate updates. Reconnect SSE with bounded exponential backoff and refresh the REST snapshot after reconnecting.
+SSE event names are `status`, `queue_changed`, `job_updated`, `job_completed`, `job_failed`, `history_changed`, `download_completed`, and `queue_completed`. Job events contain `{"job": <full Job object>}`. `download_completed` is the integration-facing signal that one MP3 was successfully published. `queue_completed` is emitted once when no queued item remains and contains `{"queue_length": 0, "last_job": <full Job object>}`. A single successful job emits `download_completed` followed by `queue_completed`; a final failed or cancelled job emits only `queue_completed`. Use REST for the initial snapshot and reconciliation, then SSE for immediate updates. Reconnect SSE with bounded exponential backoff and refresh the REST snapshot after reconnecting.
 
 The Job object includes parsed `title` and `artist`, the original `source_title`, source `channel`/`uploader`, thumbnail URL, progress metrics, state, timestamps, output path, warnings, and structured error fields. Prefer `artist` over `channel` when presenting track metadata.
 
@@ -102,6 +102,17 @@ Represent one Home Assistant service device identified by `(DOMAIN, instance_id)
 - current download progress sensor in percent.
 
 Entities should become unavailable on connection loss and update from the shared REST/SSE coordinator. Do not duplicate the Supervisor-provided App update entity.
+
+## Completion events and Music Assistant
+
+Forward the two integration-facing SSE events onto the Home Assistant event bus with domain-prefixed names:
+
+- `youtube_audio_downloader_download_completed` for every successfully published MP3;
+- `youtube_audio_downloader_queue_completed` once after the final queued item finishes.
+
+Keep event data local and bounded. Include the App instance ID, job ID, state, parsed title/artist, relative output path, file size, and completion timestamp; never include the bearer token. Track processed job IDs and reconcile REST history after an SSE reconnect so a short disconnect does not silently lose a completion notification.
+
+The current Home Assistant Music Assistant integration does not expose a library-sync action. Music Assistant itself exposes the authenticated `music/sync` command and supports restricting it to `media_types: ["track"]` and the configured filesystem provider instance. Do not call Music Assistant from the App: keep the downloader independent. A future optional companion-integration feature may invoke the official Music Assistant API after `queue_completed`, but it must use an explicitly identified provider and authenticated connection rather than scanning every provider or relying on private Home Assistant integration internals. Until that optional feature exists, always emit the Home Assistant events so users and automations have a stable hook.
 
 ## Tests and release quality
 

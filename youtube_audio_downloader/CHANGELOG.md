@@ -2,6 +2,14 @@
 
 All notable changes to this App are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow Semantic Versioning.
 
+## [0.1.7] - 2026-07-17
+
+### Added
+
+- Emit `download_completed` after every successfully published MP3 with the full job payload.
+- Emit `queue_completed` once after the final queued item finishes, including the final job and zero queue length.
+- Document reliable Home Assistant event forwarding and the official Music Assistant `music/sync` handoff for the future companion integration.
+
 ## [0.1.6] - 2026-07-17
 
 ### Added
@@ -81,6 +89,7 @@ All notable changes to this App are documented here. The format follows [Keep a 
 - Backend/frontend tests, strict lint/type checks, App metadata validation, image smoke build, dependency automation, and release workflow.
 - Ingress source enforcement and Home Assistant-recommended 128x128 icon and 250x100 logo assets.
 
+[0.1.7]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.3...v0.1.4

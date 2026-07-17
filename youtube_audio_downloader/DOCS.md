@@ -74,7 +74,7 @@ For Web UI use, resolve all URLs relative to the current Ingress document. The c
 | DELETE | `/api/v1/history` | Body `{"confirm":true}`; never deletes MP3 files. |
 | GET | `/api/v1/events` | SSE events and 20-second heartbeat comments. |
 
-SSE event names are `status`, `queue_changed`, `job_updated`, `job_completed`, `job_failed`, and `history_changed`.
+SSE event names are `status`, `queue_changed`, `job_updated`, `job_completed`, `job_failed`, `history_changed`, `download_completed`, and `queue_completed`. `download_completed` is emitted only after one MP3 has been successfully published and contains `{"job": <full Job object>}`. `queue_completed` is emitted once after the worker finishes the last queued item and contains `{"queue_length": 0, "last_job": <full Job object>}`. A one-item queue intentionally emits both events in that order. Failed or cancelled jobs can end a queue and therefore produce `queue_completed`, but never `download_completed`.
 
 Stable codes include `invalid_url`, `unsupported_host`, `duplicate_job`, `queue_full`, `job_not_found`, `job_not_cancellable`, `job_not_redownloadable`, `metadata_failed`, `download_failed`, `conversion_failed`, `storage_unavailable`, `output_path_invalid`, `insufficient_space`, `confirmation_required`, and `internal_error`. Tracebacks are logged, never returned.
 

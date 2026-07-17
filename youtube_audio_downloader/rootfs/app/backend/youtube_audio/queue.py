@@ -170,6 +170,7 @@ class QueueService:
             await self.database.save(job)
             LOGGER.info("Job completed id=%s output=%s", job.id, job.output_file)
             await self.events.publish("job_completed", {"job": job.model_dump(mode="json")})
+            await self.events.publish("download_completed", {"job": job.model_dump(mode="json")})
         except CancelledError:
             job.state = JobState.CANCELLED
             job.finished_at = datetime.now(UTC)
@@ -208,6 +209,16 @@ class QueueService:
             await self.database.trim_history(self.settings.history_limit)
             await self.events.publish("queue_changed", {})
             await self.events.publish("history_changed", {})
+            async with self._mutation_lock:
+                queued = await self.database.count_by_states([JobState.QUEUED])
+                if queued == 0:
+                    await self.events.publish(
+                        "queue_completed",
+                        {
+                            "queue_length": 0,
+                            "last_job": job.model_dump(mode="json"),
+                        },
+                    )
 
     async def _cleanup_stale_temp(self) -> None:
         cutoff = datetime.now(UTC) - timedelta(hours=24)
