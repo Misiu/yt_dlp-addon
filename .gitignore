@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+node_modules/
+youtube_audio_downloader/rootfs/app/frontend/dist/
+*.db
+*.db-shm
+*.db-wal
+.env

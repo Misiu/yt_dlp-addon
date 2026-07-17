@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  app-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - uses: frenck/action-addon-linter@v2.21
+        with:
+          path: ./youtube_audio_downloader
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: pip install yamllint==1.37.1 pyyaml==6.0.2
+      - run: yamllint .
+      - run: python scripts/validate_repository.py
+      - run: python scripts/validate_version.py
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install --editable ".[dev]"
+      - run: pip install uv==0.10.10
+      - run: uv lock --check
+      - name: Check exported runtime lock
+        run: |
+          uv export --locked --no-dev --no-emit-project --no-header \
+            --format requirements-txt \
+            --output-file youtube_audio_downloader/rootfs/app/backend/requirements.lock
+          git diff --exit-code -- uv.lock youtube_audio_downloader/rootfs/app/backend/requirements.lock
+      - run: ruff format --check .
+      - run: ruff check .
+      - run: mypy
+      - run: pytest --cov=youtube_audio --cov-report=term-missing
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: youtube_audio_downloader/rootfs/app/frontend
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: youtube_audio_downloader/rootfs/app/frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+      - run: test -s dist/index.html
+
+  container-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - run: docker build --tag youtube-audio-downloader:smoke youtube_audio_downloader
+      - name: Run image
+        run: |
+          mkdir -p .smoke/data .smoke/media
+          printf '%s' '{"output_directory":"youtube_audio","mp3_quality":320,"history_limit":100,"overwrite_existing":false}' > .smoke/data/options.json
+          docker run --detach --name youtube-audio-smoke \
+            --publish 127.0.0.1:8099:8099 \
+            --volume "$PWD/.smoke/data:/data" \
+            --volume "$PWD/.smoke/media:/media" \
+            youtube-audio-downloader:smoke
+      - name: Check health
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8099/api/health | grep --quiet '"status":"ok"'; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs youtube-audio-smoke
+          exit 1
+      - name: Stop image
+        if: always()
+        run: docker rm --force youtube-audio-smoke || true

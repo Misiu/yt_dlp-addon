@@ -1,0 +1,13 @@
+configuration:
+  output_directory:
+    name: Katalog docelowy
+    description: Katalog wewnątrz /media. Pełna ścieżka /media jest również akceptowana i walidowana.
+  mp3_quality:
+    name: Przepływność MP3
+    description: Przepływność kodowania w kbit/s; nie poprawia jakości materiału źródłowego.
+  history_limit:
+    name: Limit historii
+    description: Maksymalna liczba zakończonych zadań zachowanych w bazie aplikacji.
+  overwrite_existing:
+    name: Nadpisuj istniejące pliki
+    description: Zastępuje MP3 o tej samej nazwie; w przeciwnym razie dodaje numer.

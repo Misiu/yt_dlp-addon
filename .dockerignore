@@ -1,0 +1,8 @@
+.git
+.github
+.venv
+node_modules
+tests
+*.db
+__pycache__
+youtube_audio_downloader/rootfs/app/frontend/node_modules

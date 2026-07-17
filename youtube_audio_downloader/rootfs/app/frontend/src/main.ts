@@ -1,0 +1,8 @@
+import "@home-assistant/webawesome/dist/styles/themes/default.css";
+import "@home-assistant/webawesome/dist/components/button/button.js";
+import "@home-assistant/webawesome/dist/components/input/input.js";
+import "@home-assistant/webawesome/dist/components/textarea/textarea.js";
+import "@home-assistant/webawesome/dist/components/progress-bar/progress-bar.js";
+import "@home-assistant/webawesome/dist/components/select/select.js";
+import "@home-assistant/webawesome/dist/components/option/option.js";
+import "./app";
