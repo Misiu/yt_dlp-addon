@@ -190,24 +190,33 @@ class MediaPipeline:
         )
         self._process = process
 
-        async def read_limited(stream: asyncio.StreamReader | None, limit: int) -> bytes:
-            if stream is None:
-                return b""
-            value = await stream.read(limit + 1)
-            if len(value) > limit:
-                process.kill()
-                raise AppError(failure_code, "Process output exceeded the safety limit.")
-            return value
-
+        tasks: list[asyncio.Task[Any]] = []
         try:
             async with asyncio.timeout(self.settings.download_timeout):
-                stdout_task = asyncio.create_task(read_limited(process.stdout, stdout_limit))
-                stderr_task = asyncio.create_task(read_limited(process.stderr, stderr_limit))
-                stdout_bytes, stderr_bytes = await asyncio.gather(stdout_task, stderr_task)
-                code = await process.wait()
+                tasks = [
+                    asyncio.create_task(
+                        _read_stream_limited(process.stdout, stdout_limit, failure_code)
+                    ),
+                    asyncio.create_task(
+                        _read_stream_limited(process.stderr, stderr_limit, failure_code)
+                    ),
+                    asyncio.create_task(process.wait()),
+                ]
+                stdout_bytes, stderr_bytes, code = await asyncio.gather(*tasks)
         except TimeoutError as exc:
             await self.cancel()
             raise AppError("download_failed", "The operation timed out.") from exc
+        except AppError:
+            if process.returncode is None:
+                process.kill()
+                await process.wait()
+            raise
+        finally:
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            if tasks:
+                await asyncio.gather(*tasks, return_exceptions=True)
         if self._cancel_requested:
             raise CancelledError
         if code != 0:
@@ -457,6 +466,21 @@ def _is_nonempty_file(path: Path) -> bool:
 
 def _file_size(path: Path) -> int:
     return path.stat().st_size
+
+
+async def _read_stream_limited(
+    stream: asyncio.StreamReader | None, limit: int, failure_code: str
+) -> bytes:
+    if stream is None:
+        return b""
+    value = bytearray()
+    while True:
+        chunk = await stream.read(min(65_536, limit + 1 - len(value)))
+        if not chunk:
+            return bytes(value)
+        value.extend(chunk)
+        if len(value) > limit:
+            raise AppError(failure_code, "Process output exceeded the safety limit.")
 
 
 def _process_group_options() -> dict[str, Any]:

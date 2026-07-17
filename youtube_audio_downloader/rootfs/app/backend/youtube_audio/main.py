@@ -18,6 +18,7 @@ from .database import Database
 from .errors import AppError
 from .events import EventBroker
 from .queue import QueueService
+from .security import IngressOnlyMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
@@ -64,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.database = database
     app.state.queue = queue
     app.state.events = events
+    app.add_middleware(IngressOnlyMiddleware)
 
     @app.exception_handler(AppError)
     async def app_error_handler(_request: Request, exc: AppError) -> JSONResponse:

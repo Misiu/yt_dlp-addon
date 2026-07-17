@@ -12,6 +12,7 @@ ingress: true
 ingress_stream: true
 panel_icon: mdi:music-box-multiple
 panel_title: YouTube Audio
+stage: experimental
 map:
   - type: media
     read_only: false

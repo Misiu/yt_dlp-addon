@@ -13,7 +13,7 @@ Configuration has a single source of truth: the Home Assistant App **Configurati
 
 The output directory is created automatically and checked for write access at startup. One download is processed at a time.
 
-The Ingress service listens on container-internal port 8099. No host port is published or configurable. Users access the UI only through authenticated Ingress; a future companion integration can use the Home Assistant internal App network. CORS is disabled.
+The Ingress service listens on container-internal port 8099. No host port is published or configurable. Application traffic is accepted only from the authenticated Supervisor Ingress proxy; container loopback is reserved for the Docker health check. A future companion integration will need a deliberately authenticated internal channel. CORS is disabled.
 
 ## Web UI
 

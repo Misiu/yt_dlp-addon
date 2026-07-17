@@ -48,6 +48,8 @@ YouTube Audio Downloader is a Home Assistant App (the feature was formerly calle
 7. Enable **Show in sidebar** on the app Info page if you want a permanent **YouTube Audio** sidebar entry.
 8. Click **Open Web UI** or use that sidebar entry.
 
+Version 0.1.0 is marked **experimental** until its Ingress, AppArmor, backup, download, and update paths have been verified on a real Home Assistant OS test instance.
+
 To add it manually, open the App store repository dialog and enter:
 
 ```text
@@ -79,7 +81,7 @@ Open the Web UI, paste one link or multiple links (one per line), and select **A
 
 Ingress-relative endpoints are under `./api/v1`; health is at `./api/health`. The main operations are `POST /api/v1/downloads`, `GET /api/v1/status`, `GET /api/v1/queue`, paged `GET /api/v1/history`, cancellation/removal endpoints, read-only config/info, and `GET /api/v1/events` for SSE. See the [complete API documentation](youtube_audio_downloader/DOCS.md#rest-api).
 
-Port 8099 is internal to the container and is not published in the App Network panel. It exists only for authenticated Ingress and for a future Home Assistant companion integration discovered through Supervisor. Users do not configure or expose it, and CORS is intentionally absent.
+Port 8099 is internal to the container and is not published in the App Network panel. It accepts application traffic only from the authenticated Supervisor Ingress proxy; loopback is permitted for the container health check. Users do not configure or expose it, and CORS is intentionally absent. A future companion integration will use a deliberately authenticated internal channel.
 
 ## Storage
 

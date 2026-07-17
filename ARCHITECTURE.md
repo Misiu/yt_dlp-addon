@@ -8,7 +8,7 @@ YouTube Audio Downloader is a Home Assistant App (formerly called an add-on) tha
 
 ### Base image and process model
 
-The runtime uses the pinned multi-architecture Home Assistant Alpine base `ghcr.io/home-assistant/base:3.24`. This is the stable tag currently referenced by Home Assistant's `latest` tag, while avoiding a mutable base during reproducible release builds. It supplies the supported s6-overlay v3 init and bashio environment. Python, ffmpeg, Node.js, CA certificates and all Python wheels are installed while building; the running app never installs or upgrades itself. Node.js is the external JavaScript runtime required by current yt-dlp YouTube challenge solving, and the pinned `yt-dlp[default]` dependency supplies the matching EJS scripts. `init: false` is required because the image has s6-overlay v3. s6 owns signal forwarding and process reaping, while Uvicorn owns the application lifecycle.
+The runtime uses the current Home Assistant Alpine `3.24` multi-architecture base, pinned to its manifest digest. Home Assistant's `latest` tag currently resolves to the same manifest, while the digest keeps release rebuilds deterministic. The frontend builder uses the supported Node.js 24 LTS line and is pinned the same way. The runtime base supplies the supported s6-overlay v3 init and bashio environment. Python, ffmpeg, Node.js, CA certificates and all Python wheels are installed while building; the running app never installs or upgrades itself. Node.js is the external JavaScript runtime required by current yt-dlp YouTube challenge solving, and the pinned `yt-dlp[default]` dependency supplies the matching EJS scripts. `init: false` is required because the image has s6-overlay v3. s6 owns signal forwarding and process reaping, while Uvicorn owns the application lifecycle.
 
 The service currently runs as the container user used by the Home Assistant base image. This is necessary for reliable writes to Supervisor-managed `/data` and the explicitly mapped `/media` volume across Home Assistant OS installations. It is confined by protection mode and a custom AppArmor profile to the image, `/data`, `/media`, `/tmp`, networking, and the required executables. No host network, privileged capability, device, Supervisor API, or Home Assistant API access is requested.
 
@@ -24,7 +24,7 @@ Metadata extraction and download use `python -m yt_dlp` in child processes; conv
 
 SSE is used because updates are server-to-client only. `ingress_stream: true` prevents response buffering, and heartbeat comments keep proxies from considering an idle stream dead. The frontend reconnects automatically and falls back to 10-second REST polling. Vite emits relative asset URLs (`base: "./"`), the UI uses a single route, and API URLs are resolved against `document.baseURI`, so no code assumes `/` is the public prefix.
 
-The app listens on container-internal port 8099 for authenticated Ingress, but publishes no host port. A future companion integration can receive the internal host and port through Supervisor discovery and use the same versioned API without user network configuration.
+The app listens on container-internal port 8099 for authenticated Ingress, but publishes no host port. HTTP requests are accepted only from the Supervisor Ingress proxy (`172.30.32.2`) and container loopback for the Docker health check. A future companion integration will need an explicit authenticated bridge or another deliberately approved internal channel rather than weakening this boundary.
 
 ### Frontend design system
 
@@ -34,11 +34,11 @@ The UI bundles Lit and the public `@home-assistant/webawesome` package used by t
 
 Only HTTPS URLs on an exact allowlist of YouTube hosts are accepted. Video IDs are parsed structurally, playlist-only URLs are rejected, URL length is bounded, and active video IDs are unique. Thumbnail retrieval accepts only public DNS results and bounded HTTPS responses. Output configuration is normalized beneath `/media`; user input cannot alter it. Filenames remove control/path/device-name hazards while preserving Unicode. Final files are moved atomically from `/data/tmp` to `/media` after conversion and tagging.
 
-Ingress supplies authenticated-user headers. CORS is not enabled, the API has no host mapping, and errors have stable codes without tracebacks.
+Ingress supplies authenticated-user headers. CORS is not enabled, the API has no host mapping, non-Ingress clients are rejected, and errors have stable codes without tracebacks.
 
 ### Multi-architecture and release
 
-Only `amd64` and `aarch64`, the architectures currently documented by Home Assistant and covered by the official builder matrix, are declared. Releases use `home-assistant/builder` 2026.06 actions to publish architecture images and one generic GHCR manifest at `ghcr.io/misiu/youtube-audio-downloader:<version>`. Pull requests build both architectures without pushing.
+Only `amd64` and `aarch64`, the architectures currently documented by Home Assistant and covered by the official builder matrix, are declared. Releases use `home-assistant/builder` 2026.06 actions to publish and Cosign-sign architecture images and one generic GHCR manifest at `ghcr.io/misiu/youtube-audio-downloader:<version>`. The release build also verifies the signed Home Assistant base image. Pull requests build both architectures without pushing.
 
 ## Corrections to the original brief
 

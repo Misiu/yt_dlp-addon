@@ -36,8 +36,12 @@ def make_app(tmp_path: Path) -> FastAPI:
     return app
 
 
+def ingress_client(app: FastAPI, *, root_path: str = "") -> TestClient:
+    return TestClient(app, root_path=root_path, client=("172.30.32.2", 50_000))
+
+
 def test_health_and_effective_config(tmp_path: Path) -> None:
-    with TestClient(make_app(tmp_path)) as client:
+    with ingress_client(make_app(tmp_path)) as client:
         health = client.get("/api/health")
         assert health.status_code == 200
         assert health.json() == {"status": "ok", "version": "0.1.0"}
@@ -48,7 +52,7 @@ def test_health_and_effective_config(tmp_path: Path) -> None:
 
 def test_invalid_and_duplicate_downloads(tmp_path: Path) -> None:
     app = make_app(tmp_path)
-    with TestClient(app) as client:
+    with ingress_client(app) as client:
         invalid = client.post("/api/v1/downloads", json={"url": "https://example.com/video"})
         assert invalid.status_code == 400
         assert invalid.json()["error"]["code"] == "unsupported_host"
@@ -64,7 +68,7 @@ def test_invalid_and_duplicate_downloads(tmp_path: Path) -> None:
 
 
 def test_batch_downloads_are_validated_and_enqueued_atomically(tmp_path: Path) -> None:
-    with TestClient(make_app(tmp_path)) as client:
+    with ingress_client(make_app(tmp_path)) as client:
         invalid = client.post(
             "/api/v1/downloads/batch",
             json={
@@ -104,13 +108,20 @@ def test_batch_downloads_are_validated_and_enqueued_atomically(tmp_path: Path) -
 
 
 def test_ingress_style_prefixed_path_is_not_hard_coded(tmp_path: Path) -> None:
-    with TestClient(make_app(tmp_path), root_path="/ingress/token") as client:
+    with ingress_client(make_app(tmp_path), root_path="/ingress/token") as client:
         response = client.get("/api/health")
         assert response.status_code == 200
 
 
+def test_rejects_clients_outside_ingress_network(tmp_path: Path) -> None:
+    with TestClient(make_app(tmp_path), client=("172.30.32.3", 50_000)) as client:
+        response = client.get("/api/v1/status")
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "ingress_required"
+
+
 def test_queue_cancel_history_and_clear_api(tmp_path: Path) -> None:
-    with TestClient(make_app(tmp_path)) as client:
+    with ingress_client(make_app(tmp_path)) as client:
         first = client.post(
             "/api/v1/downloads", json={"url": "https://youtu.be/dQw4w9WgXcQ"}
         ).json()
@@ -143,7 +154,7 @@ def test_queue_cancel_history_and_clear_api(tmp_path: Path) -> None:
 
 
 def test_request_validation_uses_stable_error_envelope(tmp_path: Path) -> None:
-    with TestClient(make_app(tmp_path)) as client:
+    with ingress_client(make_app(tmp_path)) as client:
         response = client.post("/api/v1/downloads", json={})
         assert response.status_code == 422
         assert response.json()["error"]["code"] == "invalid_request"

@@ -48,6 +48,8 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+          cosign-base-identity: "https://github.com/home-assistant/docker-base/.*"
+          cosign-base-verify: ghcr.io/home-assistant/base:3.24@sha256:94ff231402a5e7ad2a82e261ad5fa4ffae7d7bb095c3febb2edbdf309c9b6aca
           context: ./youtube_audio_downloader
           image: ${{ matrix.image }}
           image-tags: |
