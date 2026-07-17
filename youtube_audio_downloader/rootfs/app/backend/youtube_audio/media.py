@@ -32,6 +32,7 @@ from .models import Job, JobState
 LOGGER = logging.getLogger(__name__)
 ProgressCallback = Callable[[Job], Awaitable[None]]
 _PERCENT = re.compile(r"(?P<percent>\d{1,3}(?:\.\d+)?)%")
+_PROGRESS_PREFIX = "__YTA_PROGRESS__|"
 _THUMBNAIL_HOSTS = {
     "i.ytimg.com",
     "i1.ytimg.com",
@@ -247,7 +248,7 @@ class MediaPipeline:
             "--js-runtimes",
             "node",
             "--progress-template",
-            "download:%(progress._percent_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes,progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s",
+            f"download:{_PROGRESS_PREFIX}%(progress._percent_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes,progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s",
             "--format",
             "bestaudio/best",
             "--output",
@@ -270,8 +271,18 @@ class MediaPipeline:
                         await self.cancel()
                         raise CancelledError
                     line = raw_line.decode("utf-8", "replace").strip()
-                    if line.startswith("download:"):
+                    if line.startswith(_PROGRESS_PREFIX):
                         self._apply_progress(job, line)
+                        LOGGER.info(
+                            "Download progress id=%s percent=%s downloaded=%s total=%s "
+                            "speed=%s eta=%s",
+                            job.id,
+                            job.progress,
+                            job.downloaded_bytes,
+                            job.total_bytes,
+                            job.speed_bytes_per_second,
+                            job.eta_seconds,
+                        )
                         await update(job)
                 code = await process.wait()
         except TimeoutError as exc:
@@ -296,7 +307,7 @@ class MediaPipeline:
             return None
 
     def _apply_progress(self, job: Job, line: str) -> None:
-        values = line.removeprefix("download:").split("|")
+        values = line.removeprefix(_PROGRESS_PREFIX).split("|")
         if values:
             match = _PERCENT.search(values[0])
             job.progress = min(100.0, float(match.group("percent"))) if match else None

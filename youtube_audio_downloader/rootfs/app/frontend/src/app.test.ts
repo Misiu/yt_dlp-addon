@@ -14,9 +14,15 @@ vi.mock("./api", () => ({
   request: api.request,
 }));
 
+const eventSources: FakeEventSource[] = [];
+
 class FakeEventSource extends EventTarget {
   onerror: (() => void) | null = null;
   onopen: (() => void) | null = null;
+  constructor() {
+    super();
+    eventSources.push(this);
+  }
   close(): void {}
 }
 
@@ -53,7 +59,7 @@ function mockApi(): void {
       return Promise.resolve({ state: "downloading", progress: 42, queue_length: 1, current: currentJob });
     if (path === "v1/queue") return Promise.resolve({ items: [{ ...currentJob, id: "queued", state: "queued" }] });
     if (path.startsWith("v1/history")) return Promise.resolve({ items: [{ ...currentJob, id: "done", state: "completed", finished_at: "2026-07-17T08:02:00Z", output_file: "youtube_audio/Example audio.mp3", file_size: 5000000 }], page: 1, page_size: 25, total: 1 });
-    if (path === "v1/info") return Promise.resolve({ version: "0.1.2", yt_dlp_version: "2026.7.4", ffmpeg_version: "installed", architecture: "amd64", output_directory: "youtube_audio", database: "/data/youtube_audio.db", queue_limit: 100 });
+    if (path === "v1/info") return Promise.resolve({ version: "0.1.3", yt_dlp_version: "2026.7.4", ffmpeg_version: "installed", architecture: "amd64", output_directory: "youtube_audio", database: "/data/youtube_audio.db", queue_limit: 100 });
     if (path === "v1/downloads/batch" && options?.method === "POST") return Promise.resolve({ accepted: 1, items: [{ id: "new", state: "queued" }] });
     return Promise.resolve(undefined);
   });
@@ -80,6 +86,24 @@ describe("youtube-audio-app", () => {
     expect(content).toContain("youtube_audio/Example audio.mp3");
     expect(content).toContain("2026.7.4");
     expect(element.shadowRoot?.querySelector("wa-progress-bar")?.getAttribute("value")).toBe("42");
+  });
+
+  it("applies live progress from the SSE job payload", async () => {
+    const element = await renderApp();
+    eventSources.at(-1)?.dispatchEvent(new MessageEvent("job_updated", {
+      data: JSON.stringify({
+        job: {
+          ...currentJob,
+          progress: 72.8,
+          downloaded_bytes: 7_280_000,
+          eta_seconds: 2,
+        },
+      }),
+    }));
+    await (element as HTMLElement & { updateComplete: Promise<boolean> }).updateComplete;
+
+    expect(element.shadowRoot?.querySelector("wa-progress-bar")?.getAttribute("value")).toBe("72.8");
+    expect(element.shadowRoot?.textContent).toContain("7.3 MB");
   });
 
   it("validates and submits multiple URLs with the stable batch request shape", async () => {
