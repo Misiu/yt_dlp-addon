@@ -75,7 +75,7 @@ Encoding at 320 kbit/s cannot improve the quality of the source stream.
 
 ## Usage
 
-Open the Web UI, paste one link or multiple links (one per line), and select **Add to queue**. The UI and API apply the same strict allowlist and canonicalization rules before the batch is inserted atomically. Up to 50 unique videos can be submitted at once. Playlist contents are never expanded, even when a video URL contains a playlist parameter. The app reads metadata when each job reaches the worker, downloads and converts it, then atomically moves the finished MP3 into the configured media directory.
+Open the Web UI, paste one link or multiple links (one per line), and select **Add to queue**. The UI and API apply the same strict allowlist and canonicalization rules before the batch is inserted atomically. Up to 50 unique videos can be submitted at once. Playlist contents are never expanded, even when a video URL contains a playlist parameter. The app reads metadata when each job reaches the worker, derives artist and track title from a conventional `Artist - Title` video title, downloads and converts it, then atomically moves the finished MP3 into the configured media directory. It writes no synthetic album tag; each file retains its own embedded cover.
 
 ## Internal API
 

@@ -31,9 +31,11 @@ Titles keep Unicode but remove control and zero-width characters, Windows-invali
 
 When present, the MP3 receives:
 
-- title (`TIT2`), channel/uploader (`TPE1`), and album `YouTube` (`TALB`);
+- a track title (`TIT2`) and artist (`TPE1`) conservatively extracted from a video title formatted as `Artist - Title`; the channel/uploader is the artist fallback when no separator exists;
 - publication year (`TDRC`), a normalized description capped at 4,000 characters (`COMM`), source URL (`WOAS`), and video ID (`TXXX`);
 - a front-cover `APIC` JPEG, bounded to 1600×1600 and 2 MB.
+
+No album or album-artist tag is written. Common trailing video-only labels such as `(Official Video)`, `(Official Audio)`, `(Lyrics)`, and `(Visualizer)` are removed from the track title. Live, remix, and event qualifiers are preserved. Text frames use ID3v2.3-compatible encodings, while each file keeps its own embedded thumbnail as front cover.
 
 Thumbnail fetch/convert failure is non-fatal. The job completes without cover and retains a warning.
 

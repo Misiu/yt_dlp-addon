@@ -20,7 +20,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
-from mutagen.id3 import APIC, COMM, ID3, TALB, TDRC, TIT2, TPE1, TXXX, WOAS
+from mutagen.id3 import APIC, COMM, ID3, TDRC, TIT2, TPE1, TXXX, WOAS
 from mutagen.mp3 import MP3
 from PIL import Image
 
@@ -33,6 +33,12 @@ LOGGER = logging.getLogger(__name__)
 ProgressCallback = Callable[[Job], Awaitable[None]]
 _PERCENT = re.compile(r"(?P<percent>\d{1,3}(?:\.\d+)?)%")
 _PROGRESS_PREFIX = "__YTA_PROGRESS__|"
+_ARTIST_TITLE_SEPARATOR = re.compile(r"\s+[-\u2013\u2014]\s+", re.UNICODE)
+_VIDEO_QUALIFIER = re.compile(
+    r"\s*[\[(]\s*(?:official\s+(?:music\s+)?video|official\s+audio|"
+    r"official\s+lyric\s+video|lyrics?|lyric\s+video|audio|visuali[sz]er)\s*[\])]\s*$",
+    re.IGNORECASE,
+)
 _THUMBNAIL_HOSTS = {
     "i.ytimg.com",
     "i1.ytimg.com",
@@ -126,7 +132,8 @@ class MediaPipeline:
             await asyncio.to_thread(self._tag_mp3, encoded, job, cover)
             self._raise_if_cancelled()
 
-            stem = safe_stem(job.title, job.video_id, self.settings.filename_max_length)
+            file_title = f"{job.artist} - {job.title}" if job.artist else job.title
+            stem = safe_stem(file_title, job.video_id, self.settings.filename_max_length)
             destination = await asyncio.to_thread(
                 choose_output_path,
                 self.settings.resolved_output_directory,
@@ -356,9 +363,14 @@ class MediaPipeline:
 
     @staticmethod
     def _apply_metadata(job: Job, data: dict[str, Any]) -> None:
-        job.title = _limited_text(data.get("title"), 500)
+        job.source_title = _limited_text(data.get("title"), 500)
         job.channel = _limited_text(data.get("channel") or data.get("uploader"), 300)
         job.uploader = _limited_text(data.get("uploader"), 300)
+        job.artist, job.title = _artist_and_title(
+            job.source_title,
+            job.channel or job.uploader,
+            job.video_id,
+        )
         job.upload_date = _limited_text(data.get("upload_date"), 16)
         job.description = _limited_text(data.get("description"), 20_000)
         duration = data.get("duration")
@@ -410,21 +422,38 @@ class MediaPipeline:
             audio.add_tags()  # type: ignore[no-untyped-call]
         tags = audio.tags
         assert isinstance(tags, ID3)
-        tags.delall("TIT2")
-        tags.add(TIT2(encoding=3, text=job.title or job.video_id))
-        if job.channel or job.uploader:
-            tags.add(TPE1(encoding=3, text=job.channel or job.uploader or ""))
-        tags.add(TALB(encoding=3, text="YouTube"))
+        tags.clear()
+        tags.add(TIT2(encoding=1, text=job.title or job.video_id))
+        if job.artist:
+            tags.add(TPE1(encoding=1, text=job.artist))
         if job.upload_date and len(job.upload_date) >= 4:
-            tags.add(TDRC(encoding=3, text=job.upload_date[:4]))
+            tags.add(TDRC(encoding=1, text=job.upload_date[:4]))
         if job.description:
-            tags.add(COMM(encoding=3, lang="eng", desc="Description", text=job.description[:4_000]))
+            tags.add(COMM(encoding=1, lang="eng", desc="Description", text=job.description[:4_000]))
         tags.add(WOAS(url=job.url))
-        tags.add(TXXX(encoding=3, desc="YouTube Video ID", text=job.video_id))
+        tags.add(TXXX(encoding=0, desc="YouTube Video ID", text=job.video_id))
         if cover:
-            tags.delall("APIC")
-            tags.add(APIC(encoding=3, mime="image/jpeg", type=3, desc="Cover", data=cover))
+            tags.add(APIC(encoding=0, mime="image/jpeg", type=3, desc="Cover", data=cover))
         audio.save(v2_version=3)
+
+
+def _artist_and_title(
+    source_title: str | None,
+    fallback_artist: str | None,
+    fallback_title: str,
+) -> tuple[str | None, str]:
+    """Extract a conservative `artist - title` pair from the video title."""
+    value = (source_title or fallback_title).strip()
+    parts = _ARTIST_TITLE_SEPARATOR.split(value, maxsplit=1)
+    if len(parts) == 2 and parts[0].strip() and parts[1].strip():
+        artist = parts[0].strip()
+        title = parts[1].strip()
+    else:
+        artist = fallback_artist.strip() if fallback_artist else None
+        title = value
+
+    cleaned_title = _VIDEO_QUALIFIER.sub("", title).strip()
+    return artist, cleaned_title or title
 
 
 def _atomic_publish(source: Path, destination: Path) -> None:

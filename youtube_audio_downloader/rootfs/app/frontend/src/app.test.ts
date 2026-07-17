@@ -39,6 +39,8 @@ const currentJob = {
   started_at: "2026-07-17T08:00:01Z",
   finished_at: null,
   title: "Example audio",
+  artist: "Example artist",
+  source_title: "Example artist - Example audio",
   channel: "Example channel",
   thumbnail_url: null,
   progress: 42,
@@ -82,7 +84,7 @@ describe("youtube-audio-app", () => {
     const element = await renderApp();
     const content = element.shadowRoot?.textContent ?? "";
     expect(content).toContain("Example audio");
-    expect(content).toContain("Example channel");
+    expect(content).toContain("Example artist");
     expect(content).toContain("youtube_audio/Example audio.mp3");
     expect(content).toContain("2026.7.4");
     expect(element.shadowRoot?.querySelector("wa-progress-bar")?.getAttribute("value")).toBe("42");

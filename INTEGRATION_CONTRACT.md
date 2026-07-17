@@ -50,6 +50,8 @@ API error bodies are always `{"error":{"code":"...","message":"..."}}`. HTTP 401
 
 SSE event names are `status`, `queue_changed`, `job_updated`, `job_completed`, `job_failed`, and `history_changed`. Job events contain `{"job": <full Job object>}`. Use REST for the initial snapshot and reconciliation, then SSE for immediate updates. Reconnect SSE with bounded exponential backoff and refresh the REST snapshot after reconnecting.
 
+The Job object includes parsed `title` and `artist`, the original `source_title`, source `channel`/`uploader`, thumbnail URL, progress metrics, state, timestamps, output path, warnings, and structured error fields. Prefer `artist` over `channel` when presenting track metadata.
+
 ## Custom integration requirements
 
 Create a separate repository suitable for HACS, preferably named `yt_dlp-integration`, containing `custom_components/youtube_audio_downloader`.

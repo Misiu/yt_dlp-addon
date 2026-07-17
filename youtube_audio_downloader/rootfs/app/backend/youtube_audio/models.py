@@ -44,6 +44,8 @@ class Job(BaseModel):
     started_at: datetime | None = None
     finished_at: datetime | None = None
     title: str | None = None
+    artist: str | None = None
+    source_title: str | None = None
     channel: str | None = None
     uploader: str | None = None
     upload_date: str | None = None
