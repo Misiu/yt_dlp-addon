@@ -7,7 +7,13 @@ from pathlib import Path
 import pytest
 from PIL import Image
 from youtube_audio.errors import AppError
-from youtube_audio.media import _atomic_publish, _normalize_cover, _read_stream_limited
+from youtube_audio.media import (
+    MediaPipeline,
+    _atomic_publish,
+    _normalize_cover,
+    _read_stream_limited,
+)
+from youtube_audio.models import Job
 
 
 def test_cover_is_bounded_jpeg() -> None:
@@ -74,3 +80,32 @@ async def test_bounded_process_reader_rejects_oversized_output() -> None:
     reader.feed_eof()
     with pytest.raises(AppError, match="exceeded the safety limit"):
         await _read_stream_limited(reader, 100, "metadata_failed")
+
+
+def test_applies_machine_readable_download_progress() -> None:
+    pipeline = MediaPipeline.__new__(MediaPipeline)
+    job = Job(id="job-1", url="https://www.youtube.com/watch?v=dQw4w9WgXcQ", video_id="dQw4w9WgXcQ")
+
+    pipeline._apply_progress(
+        job,
+        "__YTA_PROGRESS__| 36.4%|1047552|2879602|3972866.1|1",
+    )
+
+    assert job.progress == 36.4
+    assert job.downloaded_bytes == 1_047_552
+    assert job.total_bytes == 2_879_602
+    assert job.speed_bytes_per_second == 3_972_866.1
+    assert job.eta_seconds == 1
+
+
+def test_applies_progress_when_optional_values_are_unavailable() -> None:
+    pipeline = MediaPipeline.__new__(MediaPipeline)
+    job = Job(id="job-1", url="https://www.youtube.com/watch?v=dQw4w9WgXcQ", video_id="dQw4w9WgXcQ")
+
+    pipeline._apply_progress(job, "__YTA_PROGRESS__| 0.1%|3072|NA|NA|NA")
+
+    assert job.progress == 0.1
+    assert job.downloaded_bytes == 3_072
+    assert job.total_bytes is None
+    assert job.speed_bytes_per_second is None
+    assert job.eta_seconds is None

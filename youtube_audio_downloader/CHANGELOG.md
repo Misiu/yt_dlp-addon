@@ -2,6 +2,17 @@
 
 All notable changes to this App are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow Semantic Versioning.
 
+## [0.1.3] - 2026-07-17
+
+### Fixed
+
+- Parse machine-readable yt-dlp progress reports so percentage, byte counts, speed, and ETA update during downloads.
+
+### Changed
+
+- Apply `job_updated` SSE payloads directly in the Web UI for immediate progress updates while retaining REST snapshots and polling fallback.
+- Log each yt-dlp progress report with job ID, percentage, byte counts, speed, and ETA for diagnostics.
+
 ## [0.1.2] - 2026-07-17
 
 ### Fixed
@@ -28,6 +39,7 @@ All notable changes to this App are documented here. The format follows [Keep a 
 - Backend/frontend tests, strict lint/type checks, App metadata validation, image smoke build, dependency automation, and release workflow.
 - Ingress source enforcement and Home Assistant-recommended 128x128 icon and 250x100 logo assets.
 
+[0.1.3]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Misiu/yt_dlp-app/releases/tag/v0.1.0

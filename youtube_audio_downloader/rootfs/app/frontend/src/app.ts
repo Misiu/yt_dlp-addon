@@ -120,7 +120,22 @@ export class YouTubeAudioApp extends LitElement {
       if (this.refreshTimer) return;
       this.refreshTimer = window.setTimeout(() => { this.refreshTimer = undefined; void this.refresh(); }, 250);
     };
-    for (const type of ["status", "queue_changed", "job_updated", "job_completed", "job_failed", "history_changed"])
+    const updateCurrent = (event: MessageEvent<string>): void => {
+      try {
+        const payload = JSON.parse(event.data) as { job?: Job };
+        if (payload.job && payload.job.id === this.status.current?.id) {
+          this.status = {
+            ...this.status,
+            state: payload.job.state,
+            progress: payload.job.progress ?? 0,
+            current: payload.job,
+          };
+        }
+      } catch { /* A snapshot refresh below remains the safe fallback. */ }
+      update();
+    };
+    this.events.addEventListener("job_updated", updateCurrent as EventListener);
+    for (const type of ["status", "queue_changed", "job_completed", "job_failed", "history_changed"])
       this.events.addEventListener(type, update);
     this.events.onerror = () => {
       if (!this.poll) this.poll = window.setInterval(() => void this.refresh(), 10_000);
