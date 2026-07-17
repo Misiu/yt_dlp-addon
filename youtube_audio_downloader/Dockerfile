@@ -61,5 +61,5 @@ LABEL \
   io.hass.arch="${BUILD_ARCH}" \
   org.opencontainers.image.title="Home Assistant App: YouTube Audio Downloader" \
   org.opencontainers.image.description="Download authorized YouTube audio as tagged MP3 files" \
-  org.opencontainers.image.source="https://github.com/Misiu/yt_dlp-addon" \
+  org.opencontainers.image.source="https://github.com/Misiu/yt_dlp-app" \
   org.opencontainers.image.licenses="MIT"

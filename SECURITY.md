@@ -6,7 +6,7 @@ Security fixes are provided for the latest released version. Update the App befo
 
 ## Reporting a vulnerability
 
-Use [GitHub private vulnerability reporting](https://github.com/Misiu/yt_dlp-addon/security/advisories/new). Do not open a public issue for SSRF, path traversal, command injection, authentication/Ingress bypass, malicious media parsing, or container escape concerns.
+Use [GitHub private vulnerability reporting](https://github.com/Misiu/yt_dlp-app/security/advisories/new). Do not open a public issue for SSRF, path traversal, command injection, authentication/Ingress bypass, malicious media parsing, or container escape concerns.
 
 Include the App version, architecture, Home Assistant version, reproduction steps, impact, and sanitized logs. Remove source URLs, usernames, media titles, tokens, IP addresses, cookies, and file contents. You should receive an acknowledgement within seven days. No bounty is promised.
 

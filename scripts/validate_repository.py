@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def main() -> None:
     repository = yaml.safe_load((ROOT / "repository.yaml").read_text("utf-8"))
     assert set(repository) == {"name", "url", "maintainer"}
-    assert repository["url"] == "https://github.com/Misiu/yt_dlp-addon"
+    assert repository["url"] == "https://github.com/Misiu/yt_dlp-app"
     config = yaml.safe_load((ROOT / "youtube_audio_downloader/config.yaml").read_text("utf-8"))
     assert config["slug"] == "youtube_audio_downloader"
     assert config["arch"] == ["amd64", "aarch64"]

@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="https://github.com/Misiu/yt_dlp-addon">
+  <a href="https://github.com/Misiu/yt_dlp-app">
     <img width="150" height="150" src="youtube_audio_downloader/icon.png" alt="YouTube Audio Downloader icon">
   </a>
 
@@ -12,11 +12,11 @@
 
 <div align="center">
 
-[![CI](https://github.com/Misiu/yt_dlp-addon/actions/workflows/ci.yaml/badge.svg)](https://github.com/Misiu/yt_dlp-addon/actions/workflows/ci.yaml)
-[![Release](https://github.com/Misiu/yt_dlp-addon/actions/workflows/release.yaml/badge.svg)](https://github.com/Misiu/yt_dlp-addon/actions/workflows/release.yaml)
-[![License: MIT](https://img.shields.io/github/license/Misiu/yt_dlp-addon)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/Misiu/yt_dlp-addon)](https://github.com/Misiu/yt_dlp-addon/stargazers)
-[![GHCR multi-arch](https://img.shields.io/badge/GHCR-amd64%20%7C%20aarch64-blue?logo=github)](https://github.com/Misiu/yt_dlp-addon/actions/workflows/release.yaml)
+[![CI](https://github.com/Misiu/yt_dlp-app/actions/workflows/ci.yaml/badge.svg)](https://github.com/Misiu/yt_dlp-app/actions/workflows/ci.yaml)
+[![Release](https://github.com/Misiu/yt_dlp-app/actions/workflows/release.yaml/badge.svg)](https://github.com/Misiu/yt_dlp-app/actions/workflows/release.yaml)
+[![License: MIT](https://img.shields.io/github/license/Misiu/yt_dlp-app)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/Misiu/yt_dlp-app)](https://github.com/Misiu/yt_dlp-app/stargazers)
+[![GHCR multi-arch](https://img.shields.io/badge/GHCR-amd64%20%7C%20aarch64-blue?logo=github)](https://github.com/Misiu/yt_dlp-app/actions/workflows/release.yaml)
 ![amd64](https://img.shields.io/badge/arch-amd64-informational)
 ![aarch64](https://img.shields.io/badge/arch-aarch64-informational)
 
@@ -37,7 +37,7 @@ YouTube Audio Downloader is a Home Assistant App (the feature was formerly calle
 
 ## Installation
 
-[![Open your Home Assistant instance and show the add app repository dialog with this repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FMisiu%2Fyt_dlp-addon)
+[![Open your Home Assistant instance and show the add app repository dialog with this repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FMisiu%2Fyt_dlp-app)
 
 1. Click the button above to add this repository to Home Assistant.
 2. Open **Settings → Apps → App store**.
@@ -53,7 +53,7 @@ Version 0.1.0 is marked **experimental** until its Ingress, AppArmor, backup, do
 To add it manually, open the App store repository dialog and enter:
 
 ```text
-https://github.com/Misiu/yt_dlp-addon
+https://github.com/Misiu/yt_dlp-app
 ```
 
 No cloning, local image build, Python, Node, `yt-dlp`, or `ffmpeg` installation is required.
@@ -115,7 +115,7 @@ See the [App changelog](youtube_audio_downloader/CHANGELOG.md).
 
 ## Issues
 
-Search or open an issue in the [GitHub issue tracker](https://github.com/Misiu/yt_dlp-addon/issues). Do not include private URLs, cookies, access tokens, or personal media metadata.
+Search or open an issue in the [GitHub issue tracker](https://github.com/Misiu/yt_dlp-app/issues). Do not include private URLs, cookies, access tokens, or personal media metadata.
 
 ## Contributing
 

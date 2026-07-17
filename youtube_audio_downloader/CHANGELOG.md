@@ -16,4 +16,4 @@ All notable changes to this App are documented here. The format follows [Keep a 
 - Backend/frontend tests, strict lint/type checks, App metadata validation, image smoke build, dependency automation, and release workflow.
 - Ingress source enforcement and Home Assistant-recommended 128x128 icon and 250x100 logo assets.
 
-[0.1.0]: https://github.com/Misiu/yt_dlp-addon/releases/tag/v0.1.0
+[0.1.0]: https://github.com/Misiu/yt_dlp-app/releases/tag/v0.1.0

@@ -60,7 +60,7 @@ jobs:
           labels: |
             io.hass.type=app
             io.hass.name=YouTube Audio Downloader
-            io.hass.url=https://github.com/Misiu/yt_dlp-addon
+            io.hass.url=https://github.com/Misiu/yt_dlp-app
           push: true
           version: ${{ needs.prepare.outputs.version }}
 
