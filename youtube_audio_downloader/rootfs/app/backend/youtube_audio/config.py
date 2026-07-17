@@ -16,6 +16,7 @@ class Settings(BaseModel):
     mp3_quality: int = 320
     history_limit: int = Field(default=100, ge=0, le=10_000)
     overwrite_existing: bool = False
+    download_attempts: int = Field(default=3, ge=1, le=10)
     queue_limit: int = Field(default=100, ge=1, le=1_000)
     download_timeout: int = Field(default=1_800, ge=30, le=7_200)
     filename_max_length: int = Field(default=180, ge=32, le=240)

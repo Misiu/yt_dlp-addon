@@ -179,12 +179,21 @@ class QueueService:
             LOGGER.info("Job cancelled id=%s", job.id)
             await self.events.publish("job_completed", {"job": job.model_dump(mode="json")})
         except AppError as exc:
+            failed_stage = job.state
             job.state = JobState.FAILED
             job.finished_at = datetime.now(UTC)
             job.error_code = exc.code
             job.error_message = exc.message
             await self.database.save(job)
-            LOGGER.warning("Job failed id=%s code=%s", job.id, exc.code)
+            LOGGER.warning(
+                "Job failed id=%s video_id=%s stage=%s code=%s message=%s",
+                job.id,
+                job.video_id,
+                failed_stage.value,
+                exc.code,
+                exc.message,
+                exc_info=LOGGER.isEnabledFor(logging.DEBUG),
+            )
             await self.events.publish("job_failed", {"job": job.model_dump(mode="json")})
         except Exception:
             job.state = JobState.FAILED

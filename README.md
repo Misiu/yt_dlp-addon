@@ -48,7 +48,7 @@ YouTube Audio Downloader is a Home Assistant App (the feature was formerly calle
 7. Enable **Show in sidebar** on the app Info page if you want a permanent **YouTube Audio** sidebar entry.
 8. Click **Open Web UI** or use that sidebar entry.
 
-Version 0.1.5 is marked **experimental** until its Ingress, AppArmor, backup, download, integration discovery, and update paths have been verified on a real Home Assistant OS test instance.
+Version 0.1.6 is marked **experimental** until its Ingress, AppArmor, backup, download, integration discovery, and update paths have been verified on a real Home Assistant OS test instance.
 
 To add it manually, open the App store repository dialog and enter:
 
@@ -70,6 +70,7 @@ The Web UI follows Home Assistant settings-page patterns: URL form, current down
 | `mp3_quality` | `320` | Output bitrate: 128, 192, 256, or 320 kbit/s. |
 | `history_limit` | `100` | Terminal records kept in SQLite (0 clears terminal history). |
 | `overwrite_existing` | `false` | Replace the same title or add ` (2)`, ` (3)`, and so on. |
+| `download_attempts` | `3` | Total attempts after a transient download failure (1–10). |
 
 Encoding at 320 kbit/s cannot improve the quality of the source stream.
 

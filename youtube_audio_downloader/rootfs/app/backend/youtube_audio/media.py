@@ -14,6 +14,7 @@ import signal
 import socket
 import sys
 import tempfile
+from collections import deque
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
@@ -234,8 +235,13 @@ class MediaPipeline:
         if self._cancel_requested:
             raise CancelledError
         if code != 0:
-            detail = stderr_bytes.decode("utf-8", "replace").strip()[-500:]
-            LOGGER.warning("Media process failed: %s", detail)
+            detail = _diagnostic_tail(stderr_bytes.decode("utf-8", "replace"))
+            LOGGER.warning(
+                "Media process failed code=%s exit_code=%s diagnostics=%s",
+                failure_code,
+                code,
+                detail or "(no process diagnostics)",
+            )
             raise AppError(failure_code, failure_message)
         return (
             stdout_bytes.decode("utf-8", "replace"),
@@ -243,6 +249,37 @@ class MediaPipeline:
         )
 
     async def _download(self, job: Job, work: Path, update: ProgressCallback) -> Path:
+        for attempt in range(1, self.settings.download_attempts + 1):
+            self._raise_if_cancelled()
+            try:
+                return await self._download_once(job, work, update)
+            except AppError as exc:
+                if (
+                    exc.code != "download_failed"
+                    or attempt >= self.settings.download_attempts
+                    or self._cancel_requested
+                ):
+                    raise
+                delay = min(2 ** (attempt - 1), 8)
+                LOGGER.warning(
+                    "Download attempt failed id=%s video_id=%s attempt=%s/%s; retrying_in=%ss",
+                    job.id,
+                    job.video_id,
+                    attempt,
+                    self.settings.download_attempts,
+                    delay,
+                )
+                await asyncio.to_thread(_remove_download_artifacts, work)
+                job.progress = 0
+                job.downloaded_bytes = None
+                job.total_bytes = None
+                job.speed_bytes_per_second = None
+                job.eta_seconds = None
+                await update(job)
+                await asyncio.sleep(delay)
+        raise AssertionError("download attempt loop must return or raise")
+
+    async def _download_once(self, job: Job, work: Path, update: ProgressCallback) -> Path:
         output = str(work / "source.%(ext)s")
         args = [
             sys.executable,
@@ -270,6 +307,7 @@ class MediaPipeline:
             **_process_group_options(),
         )
         self._process = process
+        diagnostics: deque[str] = deque(maxlen=40)
         try:
             async with asyncio.timeout(self.settings.download_timeout):
                 assert process.stdout is not None
@@ -291,6 +329,8 @@ class MediaPipeline:
                             job.eta_seconds,
                         )
                         await update(job)
+                    elif line:
+                        diagnostics.append(line[-1_000:])
                 code = await process.wait()
         except TimeoutError as exc:
             await self.cancel()
@@ -298,6 +338,14 @@ class MediaPipeline:
         if self._cancel_requested:
             raise CancelledError
         if code != 0:
+            detail = _diagnostic_tail("\n".join(diagnostics))
+            LOGGER.warning(
+                "yt-dlp download failed id=%s video_id=%s exit_code=%s diagnostics=%s",
+                job.id,
+                job.video_id,
+                code,
+                detail or "(no process diagnostics)",
+            )
             raise AppError("download_failed", "The audio download failed.")
         candidates = await asyncio.to_thread(_find_source_files, work)
         if len(candidates) != 1:
@@ -547,6 +595,18 @@ def _is_nonempty_file(path: Path) -> bool:
 
 def _file_size(path: Path) -> int:
     return path.stat().st_size
+
+
+def _remove_download_artifacts(work: Path) -> None:
+    for path in work.glob("source.*"):
+        if path.is_file():
+            path.unlink(missing_ok=True)
+
+
+def _diagnostic_tail(value: str, limit: int = 4_000) -> str:
+    """Return a bounded, single-log-record diagnostic tail from a child process."""
+    cleaned = " | ".join(part.strip() for part in value.splitlines() if part.strip())
+    return cleaned[-limit:]
 
 
 async def _read_stream_limited(

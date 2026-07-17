@@ -10,6 +10,7 @@ Configuration has a single source of truth: the Home Assistant App **Configurati
 | `mp3_quality` | enum | `320` | 128, 192, 256, or 320 kbit/s. A higher output bitrate does not improve a lower-quality source. |
 | `history_limit` | integer | `100` | 0–10,000 terminal records; trimming never deletes MP3 files. |
 | `overwrite_existing` | boolean | `false` | Atomically replaces a same-named MP3 when true; otherwise allocates a suffix. |
+| `download_attempts` | integer | `3` | Total attempts after transient download failures; accepted range is 1–10. |
 
 The output directory is created automatically and checked for write access at startup. One download is processed at a time.
 
@@ -23,7 +24,7 @@ Inside Ingress, the UI follows the language selected in the Home Assistant user 
 
 ## Processing and file naming
 
-The worker first extracts bounded metadata, estimates temporary disk requirements, downloads `bestaudio/best` with `--no-playlist`, converts it using ffmpeg/libmp3lame, writes ID3v2.3 tags, and atomically publishes the file. Current yt-dlp YouTube challenge solving uses the bundled Node.js runtime and the EJS scripts pinned with `yt-dlp[default]`; neither is downloaded or upgraded at App startup. Source, temporary MP3, final MP3, and cover may coexist during processing.
+The worker first extracts bounded metadata, estimates temporary disk requirements, downloads `bestaudio/best` with `--no-playlist`, converts it using ffmpeg/libmp3lame, writes ID3v2.3 tags, and atomically publishes the file. Transient download failures are retried according to `download_attempts`, with a short increasing delay and cleanup of partial source files between attempts. Current yt-dlp YouTube challenge solving uses the bundled Node.js runtime and the EJS scripts pinned with `yt-dlp[default]`; neither is downloaded or upgraded at App startup. Source, temporary MP3, final MP3, and cover may coexist during processing.
 
 Titles keep Unicode but remove control and zero-width characters, Windows-invalid punctuation, separators, trailing spaces/dots, `.`/`..`, and reserved device names (`CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`). Multiple whitespace is collapsed. Without overwrite, collisions become `Title (2).mp3`, `Title (3).mp3`, and so on.
 
@@ -85,7 +86,7 @@ No cookies, YouTube login, Premium account support, playlists, parallel download
 
 ## Logs and troubleshooting
 
-The App Logs tab records startup/version/non-secret configuration, job IDs/video IDs, progress metrics, state completion, cancellation, failures, discovery status, and cleanup. Source URLs, media titles, Supervisor tokens, and integration bearer tokens are not logged.
+The App Logs tab records startup/version/non-secret configuration, job IDs/video IDs, progress metrics, state completion, cancellation, retry attempts, child-process exit codes, bounded process diagnostics, discovery status, and cleanup. Source URLs, media titles, Supervisor tokens, and integration bearer tokens are not logged.
 
 - `output_path_invalid`: select a child folder of `/media`, preferably `youtube_audio`.
 - `storage_unavailable`: check the media mount and available disk space.

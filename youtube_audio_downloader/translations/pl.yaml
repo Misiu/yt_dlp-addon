@@ -11,3 +11,6 @@ configuration:
   overwrite_existing:
     name: Nadpisuj istniejące pliki
     description: Zastępuje MP3 o tej samej nazwie; w przeciwnym razie dodaje numer.
+  download_attempts:
+    name: Próby pobierania
+    description: Łączna liczba prób po przejściowym błędzie pobierania audio, od 1 do 10.

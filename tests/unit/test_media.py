@@ -8,11 +8,13 @@ import pytest
 import youtube_audio.media as media
 from mutagen.id3 import APIC, ID3, TALB, TIT2, TPE1, TPE2, TXXX
 from PIL import Image
+from youtube_audio.config import Settings
 from youtube_audio.errors import AppError
 from youtube_audio.media import (
     MediaPipeline,
     _artist_and_title,
     _atomic_publish,
+    _diagnostic_tail,
     _normalize_cover,
     _read_stream_limited,
 )
@@ -112,6 +114,58 @@ def test_applies_progress_when_optional_values_are_unavailable() -> None:
     assert job.total_bytes is None
     assert job.speed_bytes_per_second is None
     assert job.eta_seconds is None
+
+
+def test_process_diagnostics_are_bounded_and_safe_for_one_log_record() -> None:
+    diagnostic = _diagnostic_tail("first line\n\nsecond line\n" + ("x" * 5_000))
+
+    assert len(diagnostic) == 4_000
+    assert "\n" not in diagnostic
+    assert diagnostic.endswith("x" * 100)
+
+
+@pytest.mark.asyncio
+async def test_download_retries_transient_failures(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = Settings(
+        download_attempts=3,
+        data_root=tmp_path / "data",
+        media_root=tmp_path / "media",
+    )
+    pipeline = MediaPipeline(settings)
+    job = Job(
+        id="job-1",
+        url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        video_id="dQw4w9WgXcQ",
+    )
+    work = tmp_path / "work"
+    work.mkdir()
+    attempts = 0
+
+    async def download_once(_job: Job, _work: Path, _update: object) -> Path:
+        nonlocal attempts
+        attempts += 1
+        if attempts < 3:
+            raise AppError("download_failed", "transient failure")
+        result = work / "source.webm"
+        result.write_bytes(b"audio")
+        return result
+
+    async def update(_job: Job) -> None:
+        return None
+
+    async def no_wait(_delay: float) -> None:
+        return None
+
+    monkeypatch.setattr(pipeline, "_download_once", download_once)
+    monkeypatch.setattr(asyncio, "sleep", no_wait)
+
+    result = await pipeline._download(job, work, update)
+
+    assert attempts == 3
+    assert result == work / "source.webm"
 
 
 @pytest.mark.parametrize(

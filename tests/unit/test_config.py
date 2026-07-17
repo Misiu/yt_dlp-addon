@@ -32,3 +32,9 @@ def test_accepts_valid_absolute_media_path(tmp_path: Path) -> None:
 def test_rejects_output_directory_outside_length_bounds(value: str) -> None:
     with pytest.raises(ValidationError):
         Settings(output_directory=value)
+
+
+@pytest.mark.parametrize("value", [0, 11])
+def test_rejects_download_attempts_outside_bounds(value: int) -> None:
+    with pytest.raises(ValidationError):
+        Settings(download_attempts=value)

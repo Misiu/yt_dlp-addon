@@ -71,9 +71,7 @@ export class YouTubeAudioApp extends LitElement {
     .pager { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 12px; }
     dl { display: grid; grid-template-columns: max-content 1fr; gap: 7px 14px; margin: 0; }
     dt { color: var(--app-secondary); } dd { margin: 0; overflow-wrap: anywhere; }
-    dialog { color: var(--app-text); background: var(--app-surface); border: 0; border-radius: 12px; padding: 22px;
-      max-width: 420px; box-shadow: 0 12px 40px rgb(0 0 0 / 30%); }
-    dialog::backdrop { background: rgb(0 0 0 / 45%); }
+    wa-dialog { --width: 420px; }
     button:focus-visible, a:focus-visible { outline: 3px solid var(--app-primary); outline-offset: 2px; }
     @media (max-width: 620px) {
       main { padding: 12px; } header { align-items: flex-start; flex-wrap: wrap; }
@@ -176,6 +174,13 @@ export class YouTubeAudioApp extends LitElement {
   private async removeQueued(id: string): Promise<void> { await request(`v1/queue/${id}`, { method: "DELETE" }); await this.refresh(); }
   private async cancel(id: string): Promise<void> { await request(`v1/downloads/${id}/cancel`, { method: "POST" }); }
   private async removeHistory(id: string): Promise<void> { await request(`v1/history/${id}`, { method: "DELETE" }); await this.refresh(); }
+  private readonly handleRedownloadHide = (event: Event): void => {
+    if (this.redownloadBusy) {
+      event.preventDefault();
+      return;
+    }
+    this.confirmRedownload = null;
+  };
   private async redownload(): Promise<void> {
     const job = this.confirmRedownload;
     if (!job) return;
@@ -189,7 +194,21 @@ export class YouTubeAudioApp extends LitElement {
   private async clearHistory(): Promise<void> { await request("v1/history", { method: "DELETE", body: JSON.stringify({ confirm: true }) }); this.confirmClear = false; await this.refresh(); }
   private formatDate(value: string | null): string { return value ? new Intl.DateTimeFormat(this.language, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "—"; }
   private formatBytes(value: number | null): string { return value == null ? "—" : new Intl.NumberFormat(this.language, { style: "unit", unit: value >= 1e9 ? "gigabyte" : "megabyte", maximumFractionDigits: 1 }).format(value / (value >= 1e9 ? 1e9 : 1e6)); }
-  private stateLabel(state: Job["state"] | string): string { return this.t((state in { queued: 1, extracting_metadata: 1, downloading: 1, processing: 1, embedding_metadata: 1, completed: 1, failed: 1, cancelled: 1 } ? state : "error") as MessageKey); }
+  private stateLabel(state: Job["state"] | string): string {
+    const key = state in {
+      idle: 1,
+      stopping: 1,
+      queued: 1,
+      extracting_metadata: 1,
+      downloading: 1,
+      processing: 1,
+      embedding_metadata: 1,
+      completed: 1,
+      failed: 1,
+      cancelled: 1,
+    } ? (state === "idle" ? "ready" : state) : "error";
+    return this.t(key as MessageKey);
+  }
 
   private thumbnail(job: Job) { return job.thumbnail_url ? html`<img class="thumb" src=${job.thumbnail_url} alt="" loading="lazy" referrerpolicy="no-referrer" />` : html`<div class="thumb fallback" aria-hidden="true">♫</div>`; }
 
@@ -219,8 +238,8 @@ export class YouTubeAudioApp extends LitElement {
     <section class="card"><form class="add-form" @submit=${this.addJobs}><wa-textarea label=${this.t("placeholder")} help-text=${this.t("inputHelp")} rows="3" resize="auto" .value=${this.url} @input=${(event: Event) => { this.url = (event.target as HTMLTextAreaElement).value; }} required></wa-textarea><wa-button type="submit" variant="brand" ?loading=${this.busy} ?disabled=${this.busy}>${this.t("add")}</wa-button></form><p>${this.t("sourceQuality")}</p>${this.notice ? html`<p class="success" role="status">${this.notice}</p>` : nothing}${this.error ? html`<p class="error" role="alert">${this.error}</p>` : nothing}</section>
     ${this.renderCurrent()}${this.renderQueue()}${this.renderHistory()}
     <section class="card"><h2>${this.t("about")}</h2>${this.info ? html`<dl><dt>App</dt><dd>${this.info.version}</dd><dt>yt-dlp</dt><dd>${this.info.yt_dlp_version}</dd><dt>ffmpeg</dt><dd>${this.info.ffmpeg_version}</dd><dt>Architecture</dt><dd>${this.info.architecture}</dd><dt>Media</dt><dd>/media/${this.info.output_directory}</dd><dt>Database</dt><dd>${this.info.database}</dd></dl>` : nothing}<p>${this.t("directWarning")}</p></section>
-    <dialog ?open=${this.confirmClear} aria-labelledby="clear-title"><h2 id="clear-title">${this.t("clearHistory")}</h2><p>${this.t("clearPrompt")}</p><div class="actions"><wa-button @click=${() => { this.confirmClear = false; }}>${this.t("dismiss")}</wa-button><wa-button variant="danger" @click=${() => void this.clearHistory()}>${this.t("confirm")}</wa-button></div></dialog>
-    <dialog ?open=${this.confirmRedownload !== null} aria-labelledby="redownload-title"><h2 id="redownload-title">${this.t("redownload")}</h2><p>${this.t("redownloadPrompt").replace("{title}", this.confirmRedownload?.title ?? this.confirmRedownload?.url ?? "")}</p><div class="actions"><wa-button ?disabled=${this.redownloadBusy} @click=${() => { this.confirmRedownload = null; }}>${this.t("cancelAction")}</wa-button><wa-button variant="brand" ?loading=${this.redownloadBusy} ?disabled=${this.redownloadBusy} @click=${() => void this.redownload()}>${this.t("redownloadConfirm")}</wa-button></div></dialog>
+    <wa-dialog label=${this.t("clearHistory")} ?open=${this.confirmClear} @wa-hide=${() => { this.confirmClear = false; }}><p>${this.t("clearPrompt")}</p><wa-button slot="footer" data-dialog="close">${this.t("dismiss")}</wa-button><wa-button slot="footer" variant="danger" @click=${() => void this.clearHistory()}>${this.t("confirm")}</wa-button></wa-dialog>
+    <wa-dialog label=${this.t("redownload")} ?open=${this.confirmRedownload !== null} @wa-hide=${this.handleRedownloadHide}><p>${this.t("redownloadPrompt").replace("{title}", this.confirmRedownload?.title ?? this.confirmRedownload?.url ?? "")}</p><wa-button slot="footer" data-dialog="close" ?disabled=${this.redownloadBusy}>${this.t("cancelAction")}</wa-button><wa-button slot="footer" variant="brand" autofocus ?loading=${this.redownloadBusy} ?disabled=${this.redownloadBusy} @click=${() => void this.redownload()}>${this.t("redownloadConfirm")}</wa-button></wa-dialog>
     <div aria-live="polite" class="meta">${this.status.current ? this.stateLabel(this.status.current.state) : ""}</div></main>`; }
 }
 

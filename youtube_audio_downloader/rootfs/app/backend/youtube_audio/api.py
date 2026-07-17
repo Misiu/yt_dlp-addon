@@ -148,6 +148,7 @@ def create_router(
             "mp3_quality": settings.mp3_quality,
             "history_limit": settings.history_limit,
             "overwrite_existing": settings.overwrite_existing,
+            "download_attempts": settings.download_attempts,
             "concurrent_downloads": 1,
         }
 

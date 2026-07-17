@@ -11,3 +11,6 @@ configuration:
   overwrite_existing:
     name: Overwrite existing files
     description: Replace a same-named MP3; otherwise append a numeric suffix.
+  download_attempts:
+    name: Download attempts
+    description: Total attempts for a transient audio download failure, from 1 to 10.

@@ -2,6 +2,18 @@
 
 All notable changes to this App are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow Semantic Versioning.
 
+## [0.1.6] - 2026-07-17
+
+### Added
+
+- Retry transient audio download failures automatically, with three total attempts by default and a configurable `download_attempts` range of 1–10.
+- Log bounded yt-dlp/ffmpeg diagnostics, exit codes, failed stages, error messages, and retry numbers without logging credentials.
+
+### Fixed
+
+- Display the healthy idle service state as `Ready`/`Gotowy` instead of incorrectly falling back to `Error`/`Błąd`.
+- Render history redownload and clear-history confirmations in the official Web Awesome modal dialog, including backdrop, Escape handling, focus management, and footer actions.
+
 ## [0.1.5] - 2026-07-17
 
 ### Added
@@ -69,6 +81,7 @@ All notable changes to this App are documented here. The format follows [Keep a 
 - Backend/frontend tests, strict lint/type checks, App metadata validation, image smoke build, dependency automation, and release workflow.
 - Ingress source enforcement and Home Assistant-recommended 128x128 icon and 250x100 logo assets.
 
+[0.1.6]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.2...v0.1.3
