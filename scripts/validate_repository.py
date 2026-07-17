@@ -15,6 +15,8 @@ def main() -> None:
     config = yaml.safe_load((ROOT / "youtube_audio_downloader/config.yaml").read_text("utf-8"))
     assert config["slug"] == "youtube_audio_downloader"
     assert config["arch"] == ["amd64", "aarch64"]
+    # Supervisor 2026.07 applies numeric Range validation to bounded strings.
+    assert config["schema"]["output_directory"] == "str"
     assert "ports" not in config
     assert not any(
         config.get(key) for key in ("hassio_api", "homeassistant_api", "host_network", "privileged")

@@ -12,7 +12,7 @@ from .errors import AppError
 
 
 class Settings(BaseModel):
-    output_directory: str = "youtube_audio"
+    output_directory: str = Field(default="youtube_audio", min_length=1, max_length=200)
     mp3_quality: int = 320
     history_limit: int = Field(default=100, ge=0, le=10_000)
     overwrite_existing: bool = False

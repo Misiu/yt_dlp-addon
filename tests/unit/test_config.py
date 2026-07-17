@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 from youtube_audio.config import Settings
 from youtube_audio.errors import AppError
 
@@ -25,3 +26,9 @@ def test_accepts_valid_absolute_media_path(tmp_path: Path) -> None:
         output_directory=str(media / "music"), data_root=tmp_path / "data", media_root=media
     )
     assert settings.resolved_output_directory == (media / "music").resolve()
+
+
+@pytest.mark.parametrize("value", ["", "a" * 201])
+def test_rejects_output_directory_outside_length_bounds(value: str) -> None:
+    with pytest.raises(ValidationError):
+        Settings(output_directory=value)
