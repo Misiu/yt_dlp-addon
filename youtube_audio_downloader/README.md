@@ -5,12 +5,13 @@ Download audio you are authorized to use, convert it to MP3, add metadata and co
 The App provides:
 
 - an authenticated Ingress Web UI with a durable queue and history;
+- an authenticated internal API announced automatically for a companion Home Assistant integration;
 - safe single-video downloads, tagged MP3 output, cancellation, and restart recovery;
 - English and Polish configuration labels;
-- no Home Assistant or Supervisor API privileges and no account credentials.
+- no elevated Home Assistant or Supervisor API privileges and no account credentials.
 
 Final files are written below the configured `/media` directory. Job state is stored separately in `/data`. Source URLs are sent only to the source service and its media/CDN hosts as needed by `yt-dlp`; no analytics service is included.
 
-Read the [full documentation](DOCS.md) before enabling optional direct network access.
+Read the [full documentation](DOCS.md) for the internal API and storage model.
 
 Use this App only for content you are legally authorized to download and convert.

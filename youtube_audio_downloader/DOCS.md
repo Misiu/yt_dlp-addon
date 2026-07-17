@@ -13,11 +13,11 @@ Configuration has a single source of truth: the Home Assistant App **Configurati
 
 The output directory is created automatically and checked for write access at startup. One download is processed at a time.
 
-The Ingress service listens on container-internal port 8099. No host port is published or configurable. Application traffic is accepted only from the authenticated Supervisor Ingress proxy; container loopback is reserved for the Docker health check. A future companion integration will need a deliberately authenticated internal channel. CORS is disabled.
+The service listens on container-internal port 8099. No host port is published or configurable. The authenticated Supervisor Ingress proxy and container loopback health check are trusted. The companion integration receives the internal hostname, port, API version, instance ID, and a dedicated bearer token through Supervisor discovery; users configure none of these values. Other API clients must send `Authorization: Bearer <token>`. CORS is disabled.
 
 ## Web UI
 
-Select **Open Web UI**, paste one HTTPS YouTube video/watch/short URL or up to 50 unique links (one per line), and press **Add to queue**. The complete batch is validated before any item is inserted. Enable **Show in sidebar** on the App Info page to add the configured **YouTube Audio** menu entry. The page shows the active stage, determinate download progress when yt-dlp provides totals, byte counts, speed, ETA, waiting jobs, and paged terminal history. It reconnects to Server-Sent Events automatically and uses 10-second REST polling only while the event stream is unavailable.
+Select **Open Web UI**, paste one HTTPS YouTube video/watch/short URL or up to 50 unique links (one per line), and press **Add to queue**. The complete batch is validated before any item is inserted. Enable **Show in sidebar** on the App Info page to add the configured **YouTube Audio** menu entry. The page shows the active stage, a determinate progress bar when yt-dlp provides progress, waiting jobs, and paged terminal history. It reconnects to Server-Sent Events automatically and uses 10-second REST polling only while the event stream is unavailable.
 
 The UI detects Polish from the browser locale and otherwise uses English. It supports light/dark preferences, keyboard navigation, visible focus, reduced motion, semantic status announcements, responsive card rows, and relative Ingress paths.
 
@@ -47,7 +47,7 @@ Deleting a queued job is allowed only before it becomes active. Cancelling the c
 
 ## REST API
 
-For Web UI use, resolve all URLs relative to the current Ingress document. JSON error responses use:
+For Web UI use, resolve all URLs relative to the current Ingress document. The companion integration instead uses `http://<discovery host>:<discovery port>` with the discovered bearer token. `/api/v1/info` exposes `api_version` and the stable `instance_id` but never returns the token. JSON error responses use:
 
 ```json
 {"error":{"code":"invalid_url","message":"The provided URL is not supported."}}
@@ -82,7 +82,7 @@ No cookies, YouTube login, Premium account support, playlists, parallel download
 
 ## Logs and troubleshooting
 
-The App Logs tab records startup/version/non-secret configuration, job IDs/video IDs, state completion, cancellation, failures, and cleanup. Per-percent logs are not emitted.
+The App Logs tab records startup/version/non-secret configuration, job IDs/video IDs, progress metrics, state completion, cancellation, failures, discovery status, and cleanup. Source URLs, media titles, Supervisor tokens, and integration bearer tokens are not logged.
 
 - `output_path_invalid`: select a child folder of `/media`, preferably `youtube_audio`.
 - `storage_unavailable`: check the media mount and available disk space.

@@ -2,6 +2,19 @@
 
 All notable changes to this App are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow Semantic Versioning.
 
+## [0.1.4] - 2026-07-17
+
+### Added
+
+- Announce an authenticated internal API through Home Assistant Supervisor discovery for the companion integration.
+- Persist a stable instance UUID and dedicated bearer token in App data, and expose API compatibility metadata without exposing the token.
+- Document the complete companion-integration contract, actions, entities, security boundary, and test expectations.
+
+### Changed
+
+- Show only the active stage below the current-download progress bar instead of byte and ETA placeholders.
+- Permit non-Ingress access only to `/api/*` with the discovered bearer token; the port remains internal and unpublished.
+
 ## [0.1.3] - 2026-07-17
 
 ### Fixed
@@ -39,6 +52,7 @@ All notable changes to this App are documented here. The format follows [Keep a 
 - Backend/frontend tests, strict lint/type checks, App metadata validation, image smoke build, dependency automation, and release workflow.
 - Ingress source enforcement and Home Assistant-recommended 128x128 icon and 250x100 logo assets.
 
+[0.1.4]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.0...v0.1.1

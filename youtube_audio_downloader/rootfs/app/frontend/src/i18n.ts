@@ -39,7 +39,7 @@ const messages = {
     added: "Added",
     finished: "Finished",
     sourceQuality: "The selected MP3 bitrate cannot improve the source audio quality.",
-    directWarning: "Ingress is the supported authenticated access path.",
+    directWarning: "Use Ingress or the automatically discovered Home Assistant integration.",
   },
   pl: {
     title: "YouTube Audio Downloader",
@@ -79,7 +79,7 @@ const messages = {
     added: "Dodano",
     finished: "Zakończono",
     sourceQuality: "Wybrana przepływność MP3 nie poprawi jakości dźwięku źródłowego.",
-    directWarning: "Ingress jest wspieraną, uwierzytelnioną ścieżką dostępu.",
+    directWarning: "Użyj Ingress lub automatycznie wykrytej integracji Home Assistant.",
   },
 } as const;
 

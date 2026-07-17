@@ -12,4 +12,4 @@ Include the App version, architecture, Home Assistant version, reproduction step
 
 ## Operational guidance
 
-Keep direct port 8099 disabled unless a trusted-LAN client requires it. Never expose that port to the internet. Use current App releases, protection mode, and the included AppArmor profile. The project will never request YouTube credentials by issue, log, or frontend.
+Port 8099 is container-internal and must not be exposed to the internet. The companion integration receives its address and dedicated bearer token through protected Supervisor discovery; users should not copy or share `/data/integration_credentials.json`. Use current App releases, protection mode, and the included AppArmor profile. The project will never request YouTube credentials or integration tokens by issue, log, or frontend.

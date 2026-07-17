@@ -171,7 +171,7 @@ export class YouTubeAudioApp extends LitElement {
     return html`<section class="card" aria-labelledby="current-title"><h2 id="current-title">${this.t("current")}</h2>
       ${!job ? html`<p>${this.t("idle")}</p>` : html`<div class="job">${this.thumbnail(job)}<div><h3>${job.title ?? job.url}</h3><p>${job.channel ?? this.stateLabel(job.state)}</p>
         <div class="progress-row"><wa-progress-bar role="progressbar" aria-label=${this.stateLabel(job.state)} aria-valuemin="0" aria-valuemax="100" aria-valuenow=${job.progress ?? nothing} value=${job.progress ?? nothing}></wa-progress-bar><strong>${job.progress == null ? "…" : `${job.progress.toFixed(1)}%`}</strong></div>
-        <p class="meta">${this.stateLabel(job.state)} · ${this.formatBytes(job.downloaded_bytes)} / ${this.formatBytes(job.total_bytes)}${job.eta_seconds != null ? ` · ETA ${Math.round(job.eta_seconds)}s` : ""}</p></div>
+        <p class="meta current-state">${this.stateLabel(job.state)}</p></div>
         <div class="actions"><wa-button variant="danger" @click=${() => void this.cancel(job.id)}>${this.t("cancel")}</wa-button></div></div>`}</section>`;
   }
 

@@ -17,6 +17,7 @@ from .config import Settings
 from .database import Database
 from .errors import AppError
 from .events import EventBroker
+from .integration import API_VERSION, IntegrationCredentials
 from .models import (
     ACTIVE_STATES,
     TERMINAL_STATES,
@@ -30,7 +31,11 @@ from .queue import QueueService
 
 
 def create_router(
-    settings: Settings, database: Database, queue: QueueService, events: EventBroker
+    settings: Settings,
+    database: Database,
+    queue: QueueService,
+    events: EventBroker,
+    integration_credentials: IntegrationCredentials,
 ) -> APIRouter:
     router = APIRouter()
 
@@ -42,6 +47,8 @@ def create_router(
     async def info() -> dict[str, object]:
         return {
             "version": __version__,
+            "api_version": API_VERSION,
+            "instance_id": integration_credentials.instance_id,
             "yt_dlp_version": _module_version("yt_dlp"),
             "ffmpeg_version": await _binary_version("ffmpeg"),
             "architecture": platform.machine(),
