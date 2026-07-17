@@ -17,6 +17,8 @@ export interface Job {
   started_at: string | null;
   finished_at: string | null;
   title: string | null;
+  artist: string | null;
+  source_title: string | null;
   channel: string | null;
   thumbnail_url: string | null;
   progress: number | null;

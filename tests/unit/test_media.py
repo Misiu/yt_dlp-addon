@@ -5,10 +5,13 @@ import os
 from pathlib import Path
 
 import pytest
+import youtube_audio.media as media
+from mutagen.id3 import APIC, ID3, TALB, TIT2, TPE1, TPE2, TXXX
 from PIL import Image
 from youtube_audio.errors import AppError
 from youtube_audio.media import (
     MediaPipeline,
+    _artist_and_title,
     _atomic_publish,
     _normalize_cover,
     _read_stream_limited,
@@ -109,3 +112,122 @@ def test_applies_progress_when_optional_values_are_unavailable() -> None:
     assert job.total_bytes is None
     assert job.speed_bytes_per_second is None
     assert job.eta_seconds is None
+
+
+@pytest.mark.parametrize(
+    ("source_title", "fallback_artist", "expected_artist", "expected_title"),
+    [
+        (
+            "GIGI D'AGOSTINO - L'AMOUR TOUJOURS ( OFFICIAL VIDEO )",
+            "GIGI D'AGOSTINO",
+            "GIGI D'AGOSTINO",
+            "L'AMOUR TOUJOURS",
+        ),
+        (
+            "Anyma & Rebūke \u2013 Syren [Live from Afterlife Tomorrowland]",
+            "Afterlife",
+            "Anyma & Rebūke",
+            "Syren [Live from Afterlife Tomorrowland]",
+        ),
+        (
+            "WEEKEND - Halo Tu Londyn 🔥 NOWOŚĆ 2026 (FAIR PLAY REMIX)",
+            "Fair Play Official",
+            "WEEKEND",
+            "Halo Tu Londyn 🔥 NOWOŚĆ 2026 (FAIR PLAY REMIX)",
+        ),
+        ("The Riddle", "zyxdance", "zyxdance", "The Riddle"),
+    ],
+)
+def test_extracts_artist_and_track_title(
+    source_title: str,
+    fallback_artist: str,
+    expected_artist: str,
+    expected_title: str,
+) -> None:
+    assert _artist_and_title(source_title, fallback_artist, "video-id") == (
+        expected_artist,
+        expected_title,
+    )
+
+
+def test_applies_parsed_metadata_to_job() -> None:
+    job = Job(
+        id="job-1",
+        url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        video_id="dQw4w9WgXcQ",
+    )
+
+    MediaPipeline._apply_metadata(
+        job,
+        {
+            "title": "Gigi D'Agostino - The Riddle (Official Video)",
+            "channel": "zyxdance",
+        },
+    )
+
+    assert job.source_title == "Gigi D'Agostino - The Riddle (Official Video)"
+    assert job.artist == "Gigi D'Agostino"
+    assert job.title == "The Riddle"
+    assert job.channel == "zyxdance"
+
+
+def test_writes_track_tags_without_album_and_preserves_cover(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output = tmp_path / "track.mp3"
+
+    class FakeAudio:
+        def __init__(self) -> None:
+            self.tags = ID3()
+            self.tags.add(TALB(encoding=1, text="YouTube"))
+            self.tags.add(TPE2(encoding=1, text="YouTube"))
+            self.tags.add(APIC(encoding=1, mime="image/png", type=3, desc="Old", data=b"old"))
+            self.saved_version: int | None = None
+
+        def save(self, *, v2_version: int) -> None:
+            self.saved_version = v2_version
+            self.tags.save(output, v2_version=v2_version)
+
+    audio = FakeAudio()
+    monkeypatch.setattr(media, "MP3", lambda _path: audio)
+    source_cover = io.BytesIO()
+    Image.new("RGB", (320, 180), (12, 120, 220)).save(source_cover, "PNG")
+    cover = _normalize_cover(source_cover.getvalue())
+    job = Job(
+        id="job-1",
+        url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        video_id="dQw4w9WgXcQ",
+        title="The Riddle",
+        artist="Gigi D'Agostino",
+        channel="zyxdance",
+        upload_date="20000101",
+    )
+
+    MediaPipeline._tag_mp3(output, job, cover)
+
+    assert audio.saved_version == 3
+    saved = ID3(output)
+    assert saved.version == (2, 3, 0)
+    assert saved.getall("TALB") == []
+    assert saved.getall("TPE2") == []
+    assert saved.getall("TIT2")[0].text == ["The Riddle"]
+    assert isinstance(saved.getall("TIT2")[0], TIT2)
+    assert saved.getall("TIT2")[0].encoding == 1
+    assert saved.getall("TPE1")[0].text == ["Gigi D'Agostino"]
+    assert isinstance(saved.getall("TPE1")[0], TPE1)
+    embedded = saved.getall("APIC")[0]
+    assert isinstance(embedded, APIC)
+    assert embedded.encoding == 0
+    assert embedded.desc == "Cover"
+    assert embedded.mime == "image/jpeg"
+    assert embedded.type == 3
+    assert embedded.data == cover
+    source_id = saved.getall("TXXX:YouTube Video ID")[0]
+    assert isinstance(source_id, TXXX)
+    assert source_id.encoding == 0
+    assert source_id.desc == "YouTube Video ID"
+    assert source_id.text == ["dQw4w9WgXcQ"]
+    with Image.open(io.BytesIO(embedded.data)) as image:
+        assert image.format == "JPEG"
+        assert image.size == (320, 180)

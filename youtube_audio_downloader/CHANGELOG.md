@@ -15,6 +15,12 @@ All notable changes to this App are documented here. The format follows [Keep a 
 - Show only the active stage below the current-download progress bar instead of byte and ETA placeholders.
 - Permit non-Ingress access only to `/api/*` with the discovered bearer token; the port remains internal and unpublished.
 
+### Fixed
+
+- Split conventional `Artist - Title` video titles into correct track and artist tags, with the source channel as fallback.
+- Stop assigning every download to a synthetic `YouTube` album, which caused media libraries to group unrelated tracks and reuse one album cover.
+- Write ID3v2.3-compatible text and APIC description encodings while retaining a distinct embedded JPEG cover in every file.
+
 ## [0.1.3] - 2026-07-17
 
 ### Fixed

@@ -20,6 +20,8 @@ SQLite at `/data/youtube_audio.db` is the source of truth. A small numbered migr
 
 Metadata extraction and download use `python -m yt_dlp` in child processes; conversion uses a separate `ffmpeg` child process. Arguments are fixed lists, never a shell string, and the API cannot provide downloader flags or output paths. The worker captures bounded output, applies timeouts, terminates children on cancellation/shutdown, and kills them if graceful termination expires. Blocking image and ID3 operations run through `asyncio.to_thread`.
 
+Track metadata is derived conservatively from `Artist - Title` video titles, with the source channel as artist fallback. The App deliberately writes no album tag so unrelated downloads are not grouped into one synthetic album by media libraries. ID3v2.3-compatible text encodings and per-file APIC front covers are used for broad scanner compatibility.
+
 ### Live updates and Ingress
 
 SSE is used because updates are server-to-client only. `ingress_stream: true` prevents response buffering, and heartbeat comments keep proxies from considering an idle stream dead. The frontend reconnects automatically and falls back to 10-second REST polling. Vite emits relative asset URLs (`base: "./"`), the UI uses a single route, and API URLs are resolved against `document.baseURI`, so no code assumes `/` is the public prefix.
