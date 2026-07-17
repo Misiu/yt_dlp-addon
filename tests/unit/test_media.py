@@ -1,10 +1,13 @@
 import asyncio
+import errno
 import io
+import os
+from pathlib import Path
 
 import pytest
 from PIL import Image
 from youtube_audio.errors import AppError
-from youtube_audio.media import _normalize_cover, _read_stream_limited
+from youtube_audio.media import _atomic_publish, _normalize_cover, _read_stream_limited
 
 
 def test_cover_is_bounded_jpeg() -> None:
@@ -16,6 +19,36 @@ def test_cover_is_bounded_jpeg() -> None:
         assert image.format == "JPEG"
         assert image.width <= 1600
         assert image.height <= 1600
+
+
+def test_atomic_publish_stages_file_on_destination_filesystem(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source_directory = tmp_path / "data"
+    destination_directory = tmp_path / "media"
+    source_directory.mkdir()
+    destination_directory.mkdir()
+    source = source_directory / "encoded.mp3"
+    destination = destination_directory / "finished.mp3"
+    source.write_bytes(b"complete mp3")
+    real_replace = os.replace
+
+    def reject_cross_device_replace(
+        source_path: os.PathLike[str], target_path: os.PathLike[str]
+    ) -> None:
+        source_parent = Path(source_path).parent.resolve()
+        target_parent = Path(target_path).parent.resolve()
+        if source_parent != target_parent:
+            raise OSError(errno.EXDEV, "Cross-device link")
+        real_replace(source_path, target_path)
+
+    monkeypatch.setattr(os, "replace", reject_cross_device_replace)
+
+    _atomic_publish(source, destination)
+
+    assert destination.read_bytes() == b"complete mp3"
+    assert source.read_bytes() == b"complete mp3"
+    assert not list(destination_directory.glob(".finished.mp3.*.tmp"))
 
 
 @pytest.mark.asyncio
