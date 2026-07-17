@@ -2,6 +2,12 @@
 
 All notable changes to this App are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow Semantic Versioning.
 
+## [0.1.2] - 2026-07-17
+
+### Fixed
+
+- Publish completed MP3 files atomically on the `/media` filesystem instead of attempting an unsupported cross-filesystem rename from `/data`.
+
 ## [0.1.1] - 2026-07-17
 
 ### Fixed
@@ -22,5 +28,6 @@ All notable changes to this App are documented here. The format follows [Keep a 
 - Backend/frontend tests, strict lint/type checks, App metadata validation, image smoke build, dependency automation, and release workflow.
 - Ingress source enforcement and Home Assistant-recommended 128x128 icon and 250x100 logo assets.
 
+[0.1.2]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Misiu/yt_dlp-app/releases/tag/v0.1.0

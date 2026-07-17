@@ -13,6 +13,7 @@ import shutil
 import signal
 import socket
 import sys
+import tempfile
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
@@ -131,7 +132,12 @@ class MediaPipeline:
                 stem,
                 self.settings.overwrite_existing,
             )
-            await asyncio.to_thread(os.replace, encoded, destination)
+            try:
+                await asyncio.to_thread(_atomic_publish, encoded, destination)
+            except OSError as exc:
+                raise AppError(
+                    "storage_unavailable", "Could not save the completed MP3 to /media."
+                ) from exc
             job.output_file = destination.relative_to(self.settings.media_root).as_posix()
             job.file_size = await asyncio.to_thread(_file_size, destination)
             job.progress = 100
@@ -408,6 +414,41 @@ class MediaPipeline:
             tags.delall("APIC")
             tags.add(APIC(encoding=3, mime="image/jpeg", type=3, desc="Cover", data=cover))
         audio.save(v2_version=3)
+
+
+def _atomic_publish(source: Path, destination: Path) -> None:
+    """Copy into the destination filesystem, then atomically publish the MP3."""
+    file_descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{destination.name}.", suffix=".tmp", dir=destination.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with source.open("rb") as input_file, os.fdopen(file_descriptor, "wb") as output_file:
+            file_descriptor = -1
+            shutil.copyfileobj(input_file, output_file, length=1024 * 1024)
+            output_file.flush()
+            os.fsync(output_file.fileno())
+        os.replace(temporary, destination)
+        _fsync_directory(destination.parent)
+    finally:
+        if file_descriptor >= 0:
+            os.close(file_descriptor)
+        temporary.unlink(missing_ok=True)
+
+
+def _fsync_directory(directory: Path) -> None:
+    """Best-effort directory sync after the atomic rename."""
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    try:
+        file_descriptor = os.open(directory, flags)
+    except OSError:
+        return
+    try:
+        os.fsync(file_descriptor)
+    except OSError:
+        pass
+    finally:
+        os.close(file_descriptor)
 
 
 def _limited_text(value: object, limit: int) -> str | None:

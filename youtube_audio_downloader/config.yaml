@@ -1,5 +1,5 @@
 name: YouTube Audio Downloader
-version: "0.1.1"
+version: "0.1.2"
 slug: youtube_audio_downloader
 description: Download authorized YouTube audio as tagged MP3 files
 url: https://github.com/Misiu/yt_dlp-app
