@@ -19,6 +19,13 @@ const messages = {
     refresh: "Refresh",
     cancel: "Cancel",
     remove: "Remove",
+    removeFromHistory: "Remove from history",
+    redownload: "Download again",
+    redownloadPrompt: "Download “{title}” again? The destination file will be replaced if it still exists.",
+    redownloadConfirm: "Download again",
+    redownloadQueued: "The download was added to the queue again.",
+    cancelAction: "Cancel",
+    filterHistory: "Filter history",
     clearHistory: "Clear history",
     clearPrompt: "Remove every history entry? MP3 files will not be deleted.",
     confirm: "Clear",
@@ -59,6 +66,13 @@ const messages = {
     refresh: "Odśwież",
     cancel: "Anuluj",
     remove: "Usuń",
+    removeFromHistory: "Usuń z historii",
+    redownload: "Pobierz ponownie",
+    redownloadPrompt: "Pobrać ponownie „{title}”? Plik zostanie nadpisany, jeśli nadal istnieje.",
+    redownloadConfirm: "Pobierz ponownie",
+    redownloadQueued: "Ponowne pobieranie dodano do kolejki.",
+    cancelAction: "Anuluj",
+    filterHistory: "Filtruj historię",
     clearHistory: "Wyczyść historię",
     clearPrompt: "Usunąć całą historię? Pliki MP3 nie zostaną usunięte.",
     confirm: "Wyczyść",
@@ -85,8 +99,21 @@ const messages = {
 
 export type MessageKey = keyof (typeof messages)["en"];
 
-export function detectLanguage(value = navigator.language): Language {
-  return value.toLowerCase().startsWith("pl") ? "pl" : "en";
+export function detectLanguage(value?: string): Language {
+  let selected = value;
+  if (!selected) {
+    try {
+      const stored = window.localStorage.getItem("selectedLanguage");
+      const parsed: unknown = stored === null ? null : JSON.parse(stored);
+      if (typeof parsed === "string") selected = parsed;
+    } catch { /* Storage can be unavailable in private browsing contexts. */ }
+  }
+  if (!selected && window.parent !== window) {
+    try { selected = window.parent.document.documentElement.lang; }
+    catch { /* A direct, cross-origin launch cannot inspect its parent. */ }
+  }
+  selected ||= navigator.language;
+  return selected.toLowerCase().startsWith("pl") ? "pl" : "en";
 }
 
 export function translate(language: Language, key: MessageKey): string {

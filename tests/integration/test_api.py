@@ -44,7 +44,7 @@ def test_health_and_effective_config(tmp_path: Path) -> None:
     with ingress_client(make_app(tmp_path)) as client:
         health = client.get("/api/health")
         assert health.status_code == 200
-        assert health.json() == {"status": "ok", "version": "0.1.4"}
+        assert health.json() == {"status": "ok", "version": "0.1.5"}
         config = client.get("/api/v1/config").json()
         assert config["output_directory"] == "youtube_audio"
         assert config["concurrent_downloads"] == 1
@@ -143,7 +143,8 @@ def test_integration_bearer_token_allows_internal_api_access(tmp_path: Path) -> 
 
 
 def test_queue_cancel_history_and_clear_api(tmp_path: Path) -> None:
-    with ingress_client(make_app(tmp_path)) as client:
+    app = make_app(tmp_path)
+    with ingress_client(app) as client:
         first = client.post(
             "/api/v1/downloads", json={"url": "https://youtu.be/dQw4w9WgXcQ"}
         ).json()
@@ -166,6 +167,22 @@ def test_queue_cancel_history_and_clear_api(tmp_path: Path) -> None:
             details = client.get(f"/api/v1/downloads/{first['id']}").json()
         history = client.get("/api/v1/history?state=cancelled").json()
         assert history["total"] == 1
+
+        app.state.queue.pipeline = BlockingPipeline()
+        unconfirmed = client.post(
+            f"/api/v1/history/{first['id']}/redownload", json={"confirm": False}
+        )
+        assert unconfirmed.status_code == 400
+        assert unconfirmed.json()["error"]["code"] == "confirmation_required"
+        redownload = client.post(
+            f"/api/v1/history/{first['id']}/redownload", json={"confirm": True}
+        )
+        assert redownload.status_code == 202
+        repeated = client.post(f"/api/v1/history/{first['id']}/redownload", json={"confirm": True})
+        assert repeated.status_code == 409
+        assert repeated.json()["error"]["code"] == "duplicate_job"
+        redownloaded = client.get(f"/api/v1/downloads/{redownload.json()['id']}").json()
+        assert redownloaded["overwrite_existing"] is True
 
         assert (
             client.request("DELETE", "/api/v1/history", json={"confirm": False}).status_code == 400

@@ -53,6 +53,7 @@ const currentJob = {
   error_code: null,
   error_message: null,
   warning_message: null,
+  overwrite_existing: false,
 } as const;
 
 function mockApi(): void {
@@ -61,7 +62,7 @@ function mockApi(): void {
       return Promise.resolve({ state: "downloading", progress: 42, queue_length: 1, current: currentJob });
     if (path === "v1/queue") return Promise.resolve({ items: [{ ...currentJob, id: "queued", state: "queued" }] });
     if (path.startsWith("v1/history")) return Promise.resolve({ items: [{ ...currentJob, id: "done", state: "completed", finished_at: "2026-07-17T08:02:00Z", output_file: "youtube_audio/Example audio.mp3", file_size: 5000000 }], page: 1, page_size: 25, total: 1 });
-    if (path === "v1/info") return Promise.resolve({ version: "0.1.4", api_version: 1, instance_id: "7ca8ca91-d0bd-4a99-af59-7ff59cc2be42", yt_dlp_version: "2026.7.4", ffmpeg_version: "installed", architecture: "amd64", output_directory: "youtube_audio", database: "/data/youtube_audio.db", queue_limit: 100 });
+    if (path === "v1/info") return Promise.resolve({ version: "0.1.5", api_version: 1, instance_id: "7ca8ca91-d0bd-4a99-af59-7ff59cc2be42", yt_dlp_version: "2026.7.4", ffmpeg_version: "installed", architecture: "amd64", output_directory: "youtube_audio", database: "/data/youtube_audio.db", queue_limit: 100 });
     if (path === "v1/downloads/batch" && options?.method === "POST") return Promise.resolve({ accepted: 1, items: [{ id: "new", state: "queued" }] });
     return Promise.resolve(undefined);
   });
@@ -76,8 +77,8 @@ async function renderApp(): Promise<HTMLElement> {
   return element;
 }
 
-beforeEach(() => { api.request.mockReset(); mockApi(); });
-afterEach(() => { document.body.replaceChildren(); vi.clearAllTimers(); });
+beforeEach(() => { window.localStorage.clear(); document.documentElement.lang = "en"; api.request.mockReset(); mockApi(); });
+afterEach(() => { document.body.replaceChildren(); window.localStorage.clear(); vi.clearAllTimers(); });
 
 describe("youtube-audio-app", () => {
   it("renders current work, queue, history, and diagnostics", async () => {
@@ -131,5 +132,34 @@ describe("youtube-audio-app", () => {
     document.title = "YouTube Audio Downloader";
     const audit = await axe.run(document, { rules: { "color-contrast": { enabled: false } } });
     expect(audit.violations).toEqual([]);
+  });
+
+  it("uses the Home Assistant profile language stored for Ingress", async () => {
+    window.localStorage.setItem("selectedLanguage", JSON.stringify("pl"));
+    const element = await renderApp();
+    const content = element.shadowRoot?.textContent ?? "";
+    expect(content).toContain("Historia");
+    expect(content).toContain("Pobierz ponownie");
+    expect(document.documentElement.lang).toBe("pl");
+  });
+
+  it("confirms a history redownload and requests forced replacement", async () => {
+    const element = await renderApp();
+    const redownload = element.shadowRoot?.querySelector('button[aria-label="Download again"]') as HTMLButtonElement;
+    redownload.click();
+    await (element as HTMLElement & { updateComplete: Promise<boolean> }).updateComplete;
+
+    const dialog = element.shadowRoot?.querySelector("dialog[aria-labelledby=redownload-title]");
+    expect(dialog?.hasAttribute("open")).toBe(true);
+    expect(dialog?.textContent).toContain("Example audio");
+    const confirm = dialog?.querySelector('wa-button[variant="brand"]') as HTMLElement;
+    confirm.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(api.request).toHaveBeenCalledWith(
+      "v1/history/done/redownload",
+      { method: "POST", body: JSON.stringify({ confirm: true }) },
+    );
+    expect(element.shadowRoot?.querySelectorAll("wa-tooltip")).toHaveLength(2);
   });
 });

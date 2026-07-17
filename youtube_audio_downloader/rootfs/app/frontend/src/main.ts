@@ -5,4 +5,5 @@ import "@home-assistant/webawesome/dist/components/textarea/textarea.js";
 import "@home-assistant/webawesome/dist/components/progress-bar/progress-bar.js";
 import "@home-assistant/webawesome/dist/components/select/select.js";
 import "@home-assistant/webawesome/dist/components/option/option.js";
+import "@home-assistant/webawesome/dist/components/tooltip/tooltip.js";
 import "./app";

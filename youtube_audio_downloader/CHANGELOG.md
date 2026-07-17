@@ -2,6 +2,17 @@
 
 All notable changes to this App are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow Semantic Versioning.
 
+## [0.1.5] - 2026-07-17
+
+### Added
+
+- Add labelled history icon actions with hover/focus tooltips for downloading again and removing a history row.
+- Require confirmation before a history redownload, then create a fresh queue job that forces replacement of the matching destination file.
+
+### Fixed
+
+- Follow the language selected in the Home Assistant profile when running through Ingress, with live language updates and browser-locale fallback.
+
 ## [0.1.4] - 2026-07-17
 
 ### Added
@@ -58,6 +69,7 @@ All notable changes to this App are documented here. The format follows [Keep a 
 - Backend/frontend tests, strict lint/type checks, App metadata validation, image smoke build, dependency automation, and release workflow.
 - Ingress source enforcement and Home Assistant-recommended 128x128 icon and 250x100 logo assets.
 
+[0.1.5]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Misiu/yt_dlp-app/compare/v0.1.1...v0.1.2

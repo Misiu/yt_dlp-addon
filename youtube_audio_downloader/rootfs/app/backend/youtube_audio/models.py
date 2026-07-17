@@ -62,6 +62,7 @@ class Job(BaseModel):
     error_code: str | None = None
     error_message: str | None = None
     warning_message: str | None = None
+    overwrite_existing: bool = False
 
     @property
     def elapsed_seconds(self) -> float | None:
@@ -80,6 +81,10 @@ class BatchDownloadRequest(BaseModel):
 
 
 class ClearHistoryRequest(BaseModel):
+    confirm: bool = False
+
+
+class RedownloadRequest(BaseModel):
     confirm: bool = False
 
 

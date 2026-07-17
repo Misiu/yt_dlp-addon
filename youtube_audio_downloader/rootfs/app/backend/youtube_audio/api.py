@@ -26,6 +26,7 @@ from .models import (
     DownloadRequest,
     JobState,
     Page,
+    RedownloadRequest,
 )
 from .queue import QueueService
 
@@ -123,6 +124,16 @@ def create_router(
     async def delete_history(job_id: str) -> Response:
         await queue.delete_history(job_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/api/v1/history/{job_id}/redownload",
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    async def redownload(job_id: str, body: RedownloadRequest) -> dict[str, str]:
+        if not body.confirm:
+            raise AppError("confirmation_required", "Set confirm to true.", 400)
+        job = await queue.redownload(job_id)
+        return {"id": job.id, "state": job.state.value}
 
     @router.delete("/api/v1/history")
     async def clear_history(body: ClearHistoryRequest) -> dict[str, int]:

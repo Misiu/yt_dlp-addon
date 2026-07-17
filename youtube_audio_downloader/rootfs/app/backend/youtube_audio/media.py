@@ -138,7 +138,7 @@ class MediaPipeline:
                 choose_output_path,
                 self.settings.resolved_output_directory,
                 stem,
-                self.settings.overwrite_existing,
+                self.settings.overwrite_existing or job.overwrite_existing,
             )
             try:
                 await asyncio.to_thread(_atomic_publish, encoded, destination)

@@ -44,6 +44,7 @@ Required endpoints:
 | POST | `/api/v1/downloads` | Queue one URL with `{"url":"https://..."}`. Returns HTTP 202 and `{id,state}`. |
 | POST | `/api/v1/downloads/batch` | Atomically queue 1–50 URLs with `{"urls":[...]}`. |
 | POST | `/api/v1/downloads/{id}/cancel` | Cancel the active job. |
+| POST | `/api/v1/history/{id}/redownload` | With `{"confirm":true}`, queue a history source again and force destination replacement. |
 | GET | `/api/v1/events` | Named Server-Sent Events with heartbeat comments. |
 
 API error bodies are always `{"error":{"code":"...","message":"..."}}`. HTTP 401 means the integration token is missing or invalid. Validation and queue conflicts use HTTP 4xx; transport/server failures use standard HTTP 5xx.

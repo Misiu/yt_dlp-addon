@@ -31,6 +31,7 @@ export interface Job {
   error_code: string | null;
   error_message: string | null;
   warning_message: string | null;
+  overwrite_existing: boolean;
 }
 
 export interface Status {

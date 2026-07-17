@@ -48,7 +48,7 @@ YouTube Audio Downloader is a Home Assistant App (the feature was formerly calle
 7. Enable **Show in sidebar** on the app Info page if you want a permanent **YouTube Audio** sidebar entry.
 8. Click **Open Web UI** or use that sidebar entry.
 
-Version 0.1.4 is marked **experimental** until its Ingress, AppArmor, backup, download, integration discovery, and update paths have been verified on a real Home Assistant OS test instance.
+Version 0.1.5 is marked **experimental** until its Ingress, AppArmor, backup, download, integration discovery, and update paths have been verified on a real Home Assistant OS test instance.
 
 To add it manually, open the App store repository dialog and enter:
 
@@ -75,7 +75,7 @@ Encoding at 320 kbit/s cannot improve the quality of the source stream.
 
 ## Usage
 
-Open the Web UI, paste one link or multiple links (one per line), and select **Add to queue**. The UI and API apply the same strict allowlist and canonicalization rules before the batch is inserted atomically. Up to 50 unique videos can be submitted at once. Playlist contents are never expanded, even when a video URL contains a playlist parameter. The app reads metadata when each job reaches the worker, derives artist and track title from a conventional `Artist - Title` video title, downloads and converts it, then atomically moves the finished MP3 into the configured media directory. It writes no synthetic album tag; each file retains its own embedded cover.
+Open the Web UI, paste one link or multiple links (one per line), and select **Add to queue**. The UI and API apply the same strict allowlist and canonicalization rules before the batch is inserted atomically. Up to 50 unique videos can be submitted at once. Playlist contents are never expanded, even when a video URL contains a playlist parameter. The app reads metadata when each job reaches the worker, derives artist and track title from a conventional `Artist - Title` video title, downloads and converts it, then atomically moves the finished MP3 into the configured media directory. It writes no synthetic album tag; each file retains its own embedded cover. History rows provide labelled icon actions to download a video again (after confirmation and with forced replacement) or remove only the history entry.
 
 ## Internal API
 

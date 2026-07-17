@@ -81,6 +81,35 @@ class QueueService:
         self._wake.set()
         return jobs
 
+    async def redownload(self, job_id: str) -> Job:
+        """Queue a fresh copy of a history entry and force destination replacement."""
+        if self.stopping:
+            raise AppError("service_stopping", "The app is stopping.", 503)
+        async with self._mutation_lock:
+            source = await self.database.get(job_id)
+            if source is None:
+                raise AppError("job_not_found", "Job not found.", 404)
+            if source.state not in TERMINAL_STATES:
+                raise AppError(
+                    "job_not_redownloadable", "Only history entries can be downloaded again.", 409
+                )
+            queued = await self.database.count_by_states([JobState.QUEUED, *ACTIVE_STATES])
+            if queued >= self.settings.queue_limit:
+                raise AppError("queue_full", "The download queue is full.", 409)
+            if await self.database.active_video_exists(source.video_id):
+                raise AppError("duplicate_job", "This video is already queued or active.", 409)
+            job = Job(
+                id=str(uuid.uuid4()),
+                url=source.url,
+                video_id=source.video_id,
+                overwrite_existing=True,
+            )
+            await self.database.save(job)
+        LOGGER.info("Queued redownload id=%s source_id=%s", job.id, job_id)
+        await self.events.publish("queue_changed", {"jobs": [job.model_dump(mode="json")]})
+        self._wake.set()
+        return job
+
     async def remove_queued(self, job_id: str) -> None:
         async with self._mutation_lock:
             job = await self.database.get(job_id)

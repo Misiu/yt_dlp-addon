@@ -19,7 +19,7 @@ The service listens on container-internal port 8099. No host port is published o
 
 Select **Open Web UI**, paste one HTTPS YouTube video/watch/short URL or up to 50 unique links (one per line), and press **Add to queue**. The complete batch is validated before any item is inserted. Enable **Show in sidebar** on the App Info page to add the configured **YouTube Audio** menu entry. The page shows the active stage, a determinate progress bar when yt-dlp provides progress, waiting jobs, and paged terminal history. It reconnects to Server-Sent Events automatically and uses 10-second REST polling only while the event stream is unavailable.
 
-The UI detects Polish from the browser locale and otherwise uses English. It supports light/dark preferences, keyboard navigation, visible focus, reduced motion, semantic status announcements, responsive card rows, and relative Ingress paths.
+Inside Ingress, the UI follows the language selected in the Home Assistant user profile and reacts to later language changes; direct launches fall back to the browser locale. It supports light/dark preferences, keyboard navigation, visible focus, reduced motion, semantic status announcements, responsive card rows, and relative Ingress paths.
 
 ## Processing and file naming
 
@@ -45,7 +45,7 @@ SQLite uses WAL mode at `/data/youtube_audio.db`. Queued jobs are FIFO. A unique
 
 After a restart, any job in metadata/download/conversion/tagging is reset to `queued`, marked `restart_requeued`, and retried from the beginning. Its per-job temporary directory prevents publication of a partial MP3. Items under `/data/tmp` older than 24 hours are removed at startup.
 
-Deleting a queued job is allowed only before it becomes active. Cancelling the current job terminates the current child process, waits five seconds, then kills it if necessary. Deleting or clearing history never removes media.
+Deleting a queued job is allowed only before it becomes active. Cancelling the current job terminates the current child process, waits five seconds, then kills it if necessary. Deleting or clearing history never removes media. Downloading a history item again requires confirmation, creates a new queue job, and forces replacement of the matching destination file without changing the global overwrite option.
 
 ## REST API
 
@@ -68,13 +68,14 @@ For Web UI use, resolve all URLs relative to the current Ingress document. The c
 | GET | `/api/v1/downloads/{id}` | One job. |
 | DELETE | `/api/v1/queue/{id}` | Remove a waiting job; 204. |
 | POST | `/api/v1/downloads/{id}/cancel` | Cancel the active job; 202. |
+| POST | `/api/v1/history/{id}/redownload` | Body `{"confirm":true}`; queue the source again and force destination replacement. |
 | DELETE | `/api/v1/history/{id}` | Remove a history row; 204. |
 | DELETE | `/api/v1/history` | Body `{"confirm":true}`; never deletes MP3 files. |
 | GET | `/api/v1/events` | SSE events and 20-second heartbeat comments. |
 
 SSE event names are `status`, `queue_changed`, `job_updated`, `job_completed`, `job_failed`, and `history_changed`.
 
-Stable codes include `invalid_url`, `unsupported_host`, `duplicate_job`, `queue_full`, `job_not_found`, `job_not_cancellable`, `metadata_failed`, `download_failed`, `conversion_failed`, `storage_unavailable`, `output_path_invalid`, `insufficient_space`, `confirmation_required`, and `internal_error`. Tracebacks are logged, never returned.
+Stable codes include `invalid_url`, `unsupported_host`, `duplicate_job`, `queue_full`, `job_not_found`, `job_not_cancellable`, `job_not_redownloadable`, `metadata_failed`, `download_failed`, `conversion_failed`, `storage_unavailable`, `output_path_invalid`, `insufficient_space`, `confirmation_required`, and `internal_error`. Tracebacks are logged, never returned.
 
 ## Supported URLs and limitations
 

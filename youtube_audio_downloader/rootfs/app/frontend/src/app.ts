@@ -18,6 +18,8 @@ export class YouTubeAudioApp extends LitElement {
   @state() private notice = "";
   @state() private historyState = "";
   @state() private confirmClear = false;
+  @state() private confirmRedownload: Job | null = null;
+  @state() private redownloadBusy = false;
   private events?: EventSource;
   private poll?: number;
   private refreshTimer?: number;
@@ -56,6 +58,12 @@ export class YouTubeAudioApp extends LitElement {
     .thumb.fallback { display: grid; place-items: center; font-size: 22px; }
     .meta { color: var(--app-secondary); font-size: 13px; overflow-wrap: anywhere; }
     .actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    .icon-action { display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 8px;
+      border: 0; border-radius: 50%; color: var(--app-secondary); background: transparent; cursor: pointer; }
+    .icon-action:hover { color: var(--app-primary); background: color-mix(in srgb, currentColor 12%, transparent); }
+    .icon-action.danger:hover { color: var(--error-color, #db4437); }
+    .icon-action:disabled { opacity: .45; cursor: wait; }
+    .action-icon { width: 22px; height: 22px; fill: currentColor; }
     .progress-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
     wa-progress-bar { flex: 1; }
     .toolbar { display: flex; gap: 10px; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -87,6 +95,8 @@ export class YouTubeAudioApp extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+    document.documentElement.lang = this.language;
+    window.addEventListener("storage", this.handleLanguageStorage);
     void this.refresh();
     this.connectEvents();
   }
@@ -95,8 +105,15 @@ export class YouTubeAudioApp extends LitElement {
     this.events?.close();
     if (this.poll) window.clearInterval(this.poll);
     if (this.refreshTimer) window.clearTimeout(this.refreshTimer);
+    window.removeEventListener("storage", this.handleLanguageStorage);
     super.disconnectedCallback();
   }
+
+  private readonly handleLanguageStorage = (event: StorageEvent): void => {
+    if (event.key !== "selectedLanguage") return;
+    this.language = detectLanguage();
+    document.documentElement.lang = this.language;
+  };
 
   private t(key: MessageKey): string { return translate(this.language, key); }
 
@@ -159,12 +176,28 @@ export class YouTubeAudioApp extends LitElement {
   private async removeQueued(id: string): Promise<void> { await request(`v1/queue/${id}`, { method: "DELETE" }); await this.refresh(); }
   private async cancel(id: string): Promise<void> { await request(`v1/downloads/${id}/cancel`, { method: "POST" }); }
   private async removeHistory(id: string): Promise<void> { await request(`v1/history/${id}`, { method: "DELETE" }); await this.refresh(); }
+  private async redownload(): Promise<void> {
+    const job = this.confirmRedownload;
+    if (!job) return;
+    this.redownloadBusy = true; this.error = ""; this.notice = "";
+    try {
+      await request(`v1/history/${job.id}/redownload`, { method: "POST", body: JSON.stringify({ confirm: true }) });
+      this.confirmRedownload = null; this.notice = this.t("redownloadQueued"); await this.refresh();
+    } catch (error) { this.error = error instanceof ApiError ? error.message : String(error); }
+    finally { this.redownloadBusy = false; }
+  }
   private async clearHistory(): Promise<void> { await request("v1/history", { method: "DELETE", body: JSON.stringify({ confirm: true }) }); this.confirmClear = false; await this.refresh(); }
   private formatDate(value: string | null): string { return value ? new Intl.DateTimeFormat(this.language, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "—"; }
   private formatBytes(value: number | null): string { return value == null ? "—" : new Intl.NumberFormat(this.language, { style: "unit", unit: value >= 1e9 ? "gigabyte" : "megabyte", maximumFractionDigits: 1 }).format(value / (value >= 1e9 ? 1e9 : 1e6)); }
   private stateLabel(state: Job["state"] | string): string { return this.t((state in { queued: 1, extracting_metadata: 1, downloading: 1, processing: 1, embedding_metadata: 1, completed: 1, failed: 1, cancelled: 1 } ? state : "error") as MessageKey); }
 
   private thumbnail(job: Job) { return job.thumbnail_url ? html`<img class="thumb" src=${job.thumbnail_url} alt="" loading="lazy" referrerpolicy="no-referrer" />` : html`<div class="thumb fallback" aria-hidden="true">♫</div>`; }
+
+  private actionIcon(type: "redownload" | "remove") {
+    return type === "redownload"
+      ? html`<svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L7 7l5 5V9a7 7 0 1 1-6.65 4.82l-1.9-.64A9 9 0 1 0 12 5Z" /></svg>`
+      : html`<svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Zm3 2v8h2v-8H9Zm4 0v8h2v-8h-2Z" /></svg>`;
+  }
 
   private renderCurrent() {
     const job = this.status.current;
@@ -178,8 +211,8 @@ export class YouTubeAudioApp extends LitElement {
   private renderQueue() { return html`<section class="card" aria-labelledby="queue-title"><h2 id="queue-title">${this.t("queue")} (${this.queued.length})</h2>
     ${this.queued.length === 0 ? html`<p>${this.t("queueEmpty")}</p>` : this.queued.map((job, index) => html`<div class="job">${this.thumbnail(job)}<div><h3>${index + 1}. ${job.title ?? job.url}</h3><p>${job.artist ?? job.channel ?? this.stateLabel(job.state)}</p><p class="meta">${this.t("added")}: ${this.formatDate(job.created_at)}</p></div><div class="actions"><wa-button @click=${() => void this.removeQueued(job.id)}>${this.t("remove")}</wa-button></div></div>`)}</section>`; }
 
-  private renderHistory() { const pages = Math.max(1, Math.ceil(this.history.total / this.history.page_size)); return html`<section class="card" aria-labelledby="history-title"><div class="toolbar"><h2 id="history-title">${this.t("history")}</h2><div class="actions"><wa-select aria-label="Filter history" value=${this.historyState} @change=${(event: Event) => { this.historyState = (event.target as HTMLSelectElement).value; this.history = { ...this.history, page: 1 }; void this.refresh(); }}><wa-option value="">${this.t("all")}</wa-option><wa-option value="completed">${this.t("completed")}</wa-option><wa-option value="failed">${this.t("failed")}</wa-option><wa-option value="cancelled">${this.t("cancelled")}</wa-option></wa-select><wa-button @click=${() => { this.confirmClear = true; }}>${this.t("clearHistory")}</wa-button></div></div>
-    ${this.history.items.length === 0 ? html`<p>${this.t("historyEmpty")}</p>` : this.history.items.map((job) => html`<div class="job">${this.thumbnail(job)}<div><h3>${job.title ?? job.url}</h3><p class=${job.state === "completed" ? "success" : job.state === "failed" ? "error" : ""}>${this.stateLabel(job.state)}${job.artist || job.channel ? ` · ${job.artist ?? job.channel}` : ""}</p><p class="meta">${this.t("finished")}: ${this.formatDate(job.finished_at)} · ${this.formatBytes(job.file_size)}${job.output_file ? ` · ${job.output_file}` : ""}</p>${job.error_message ? html`<p class="error">${job.error_code}: ${job.error_message}</p>` : nothing}</div><div class="actions"><wa-button @click=${() => void this.removeHistory(job.id)}>${this.t("remove")}</wa-button></div></div>`)}
+  private renderHistory() { const pages = Math.max(1, Math.ceil(this.history.total / this.history.page_size)); return html`<section class="card" aria-labelledby="history-title"><div class="toolbar"><h2 id="history-title">${this.t("history")}</h2><div class="actions"><wa-select aria-label=${this.t("filterHistory")} value=${this.historyState} @change=${(event: Event) => { this.historyState = (event.target as HTMLSelectElement).value; this.history = { ...this.history, page: 1 }; void this.refresh(); }}><wa-option value="">${this.t("all")}</wa-option><wa-option value="completed">${this.t("completed")}</wa-option><wa-option value="failed">${this.t("failed")}</wa-option><wa-option value="cancelled">${this.t("cancelled")}</wa-option></wa-select><wa-button @click=${() => { this.confirmClear = true; }}>${this.t("clearHistory")}</wa-button></div></div>
+    ${this.history.items.length === 0 ? html`<p>${this.t("historyEmpty")}</p>` : this.history.items.map((job) => { const redownloadId = `redownload-${job.id}`; const removeId = `remove-${job.id}`; return html`<div class="job">${this.thumbnail(job)}<div><h3>${job.title ?? job.url}</h3><p class=${job.state === "completed" ? "success" : job.state === "failed" ? "error" : ""}>${this.stateLabel(job.state)}${job.artist || job.channel ? ` · ${job.artist ?? job.channel}` : ""}</p><p class="meta">${this.t("finished")}: ${this.formatDate(job.finished_at)} · ${this.formatBytes(job.file_size)}${job.output_file ? ` · ${job.output_file}` : ""}</p>${job.error_message ? html`<p class="error">${job.error_code}: ${job.error_message}</p>` : nothing}</div><div class="actions"><button id=${redownloadId} class="icon-action" type="button" aria-label=${this.t("redownload")} @click=${() => { this.confirmRedownload = job; }}>${this.actionIcon("redownload")}</button><wa-tooltip for=${redownloadId}>${this.t("redownload")}</wa-tooltip><button id=${removeId} class="icon-action danger" type="button" aria-label=${this.t("removeFromHistory")} @click=${() => void this.removeHistory(job.id)}>${this.actionIcon("remove")}</button><wa-tooltip for=${removeId}>${this.t("removeFromHistory")}</wa-tooltip></div></div>`; })}
     <div class="pager"><wa-button ?disabled=${this.history.page <= 1} @click=${() => { this.history = { ...this.history, page: this.history.page - 1 }; void this.refresh(); }}>${this.t("previous")}</wa-button><span>${this.history.page} / ${pages}</span><wa-button ?disabled=${this.history.page >= pages} @click=${() => { this.history = { ...this.history, page: this.history.page + 1 }; void this.refresh(); }}>${this.t("next")}</wa-button></div></section>`; }
 
   render() { return html`<main><header><div class="titles"><h1>${this.t("title")}</h1><p>${this.t("subtitle")}</p></div><span class="status-pill" aria-live="polite">${this.stateLabel(this.status.state)}</span><wa-button aria-label=${this.t("refresh")} @click=${() => void this.refresh()}>↻ ${this.t("refresh")}</wa-button></header>
@@ -187,6 +220,7 @@ export class YouTubeAudioApp extends LitElement {
     ${this.renderCurrent()}${this.renderQueue()}${this.renderHistory()}
     <section class="card"><h2>${this.t("about")}</h2>${this.info ? html`<dl><dt>App</dt><dd>${this.info.version}</dd><dt>yt-dlp</dt><dd>${this.info.yt_dlp_version}</dd><dt>ffmpeg</dt><dd>${this.info.ffmpeg_version}</dd><dt>Architecture</dt><dd>${this.info.architecture}</dd><dt>Media</dt><dd>/media/${this.info.output_directory}</dd><dt>Database</dt><dd>${this.info.database}</dd></dl>` : nothing}<p>${this.t("directWarning")}</p></section>
     <dialog ?open=${this.confirmClear} aria-labelledby="clear-title"><h2 id="clear-title">${this.t("clearHistory")}</h2><p>${this.t("clearPrompt")}</p><div class="actions"><wa-button @click=${() => { this.confirmClear = false; }}>${this.t("dismiss")}</wa-button><wa-button variant="danger" @click=${() => void this.clearHistory()}>${this.t("confirm")}</wa-button></div></dialog>
+    <dialog ?open=${this.confirmRedownload !== null} aria-labelledby="redownload-title"><h2 id="redownload-title">${this.t("redownload")}</h2><p>${this.t("redownloadPrompt").replace("{title}", this.confirmRedownload?.title ?? this.confirmRedownload?.url ?? "")}</p><div class="actions"><wa-button ?disabled=${this.redownloadBusy} @click=${() => { this.confirmRedownload = null; }}>${this.t("cancelAction")}</wa-button><wa-button variant="brand" ?loading=${this.redownloadBusy} ?disabled=${this.redownloadBusy} @click=${() => void this.redownload()}>${this.t("redownloadConfirm")}</wa-button></div></dialog>
     <div aria-live="polite" class="meta">${this.status.current ? this.stateLabel(this.status.current.state) : ""}</div></main>`; }
 }
 
