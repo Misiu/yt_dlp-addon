@@ -30,8 +30,17 @@ ENV PATH="/opt/youtube-audio/bin:${PATH}" \
     YAD_FRONTEND_ROOT=/app/frontend
 
 COPY rootfs/app/backend/requirements.lock /tmp/requirements.lock
-RUN pip install --no-cache-dir --require-hashes --requirement /tmp/requirements.lock \
-    && rm /tmp/requirements.lock
+RUN apk add --no-cache --virtual .build-deps \
+      build-base \
+      cargo \
+      jpeg-dev \
+      libwebp-dev \
+      linux-headers \
+      python3-dev \
+      zlib-dev \
+    && pip install --no-cache-dir --require-hashes --requirement /tmp/requirements.lock \
+    && apk del .build-deps \
+    && rm -rf /root/.cache /tmp/requirements.lock
 
 COPY rootfs/ /
 COPY --from=frontend /build/dist/ /app/frontend/

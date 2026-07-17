@@ -18,7 +18,7 @@ jobs:
           path: ./youtube_audio_downloader
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: "3.12"
       - run: pip install yamllint==1.37.1 pyyaml==6.0.2
       - run: yamllint .
       - run: python scripts/validate_repository.py
@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v7.0.0
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: "3.12"
           cache: pip
       - run: pip install --editable ".[dev]"
       - run: pip install uv==0.10.10

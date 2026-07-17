@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "youtube-audio-downloader"
 version = "0.1.0"
 description = "Backend for the YouTube Audio Downloader Home Assistant App"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
   "aiosqlite==0.22.1",
   "fastapi==0.139.2",
@@ -14,7 +14,7 @@ dependencies = [
   "mutagen==1.48.1",
   "pillow==12.3.0",
   "pydantic==2.13.4",
-  "uvicorn[standard]==0.51.0",
+  "uvicorn==0.51.0",
   "yt-dlp[default]==2026.7.4",
 ]
 
@@ -49,7 +49,7 @@ ignore = ["S101"]
 "tests/**/*.py" = ["S108"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.12"
 strict = true
 packages = ["youtube_audio"]
 mypy_path = "youtube_audio_downloader/rootfs/app/backend"
