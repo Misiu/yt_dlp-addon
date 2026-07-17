@@ -17,8 +17,9 @@ from .config import Settings
 from .database import Database
 from .errors import AppError
 from .events import EventBroker
+from .integration import SupervisorDiscovery, load_or_create_credentials
 from .queue import QueueService
-from .security import IngressOnlyMiddleware
+from .security import AppAccessMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
@@ -33,11 +34,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     database = Database(str(runtime_settings.database_path))
     events = EventBroker()
     queue = QueueService(runtime_settings, database, events)
+    integration_credentials = load_or_create_credentials(runtime_settings.data_root)
+    discovery = SupervisorDiscovery(integration_credentials)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> Any:
         await database.open()
         await queue.start()
+        discovery.start()
         app.state.accepting_requests = True
         LOGGER.info(
             "Starting YouTube Audio Downloader version=%s output=%s quality=%d",
@@ -49,6 +53,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             yield
         finally:
             app.state.accepting_requests = False
+            await discovery.stop()
             await queue.stop()
             await database.close()
             LOGGER.info("YouTube Audio Downloader stopped")
@@ -65,7 +70,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.database = database
     app.state.queue = queue
     app.state.events = events
-    app.add_middleware(IngressOnlyMiddleware)
+    app.state.integration_credentials = integration_credentials
+    app.add_middleware(AppAccessMiddleware, auth_token=integration_credentials.auth_token)
 
     @app.exception_handler(AppError)
     async def app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
@@ -98,7 +104,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             },
         )
 
-    app.include_router(create_router(runtime_settings, database, queue, events))
+    app.include_router(
+        create_router(runtime_settings, database, queue, events, integration_credentials)
+    )
     if runtime_settings.frontend_root.is_dir():
         app.mount(
             "/",

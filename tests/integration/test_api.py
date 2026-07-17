@@ -44,10 +44,13 @@ def test_health_and_effective_config(tmp_path: Path) -> None:
     with ingress_client(make_app(tmp_path)) as client:
         health = client.get("/api/health")
         assert health.status_code == 200
-        assert health.json() == {"status": "ok", "version": "0.1.3"}
+        assert health.json() == {"status": "ok", "version": "0.1.4"}
         config = client.get("/api/v1/config").json()
         assert config["output_directory"] == "youtube_audio"
         assert config["concurrent_downloads"] == 1
+        info = client.get("/api/v1/info").json()
+        assert info["api_version"] == 1
+        assert info["instance_id"]
 
 
 def test_invalid_and_duplicate_downloads(tmp_path: Path) -> None:
@@ -116,8 +119,27 @@ def test_ingress_style_prefixed_path_is_not_hard_coded(tmp_path: Path) -> None:
 def test_rejects_clients_outside_ingress_network(tmp_path: Path) -> None:
     with TestClient(make_app(tmp_path), client=("172.30.32.3", 50_000)) as client:
         response = client.get("/api/v1/status")
-        assert response.status_code == 403
-        assert response.json()["error"]["code"] == "ingress_required"
+        assert response.status_code == 401
+        assert response.json()["error"]["code"] == "authentication_required"
+        assert client.get("/").status_code == 403
+
+
+def test_integration_bearer_token_allows_internal_api_access(tmp_path: Path) -> None:
+    app = make_app(tmp_path)
+    token = app.state.integration_credentials.auth_token
+    with TestClient(
+        app,
+        client=("172.30.32.3", 50_000),
+        headers={"Authorization": f"Bearer {token}"},
+    ) as client:
+        assert client.get("/api/health").status_code == 200
+        assert client.get("/api/v1/status").status_code == 200
+
+        wrong = client.get(
+            "/api/v1/status",
+            headers={"Authorization": "Bearer wrong-token"},
+        )
+        assert wrong.status_code == 401
 
 
 def test_queue_cancel_history_and_clear_api(tmp_path: Path) -> None:

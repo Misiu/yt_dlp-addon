@@ -2,7 +2,7 @@
 
 ## Scope
 
-YouTube Audio Downloader is a Home Assistant App (formerly called an add-on) that accepts an authorized YouTube video URL, serializes it into a durable FIFO queue, and produces a tagged MP3 under Home Assistant media storage. It does not expose Home Assistant entities or require Supervisor/Core API access.
+YouTube Audio Downloader is a Home Assistant App (formerly called an add-on) that accepts an authorized YouTube video URL, serializes it into a durable FIFO queue, and produces a tagged MP3 under Home Assistant media storage. It announces an authenticated internal API through the Supervisor discovery endpoint but requests no elevated Supervisor or Home Assistant Core API privileges.
 
 ## Decisions
 
@@ -24,7 +24,9 @@ Metadata extraction and download use `python -m yt_dlp` in child processes; conv
 
 SSE is used because updates are server-to-client only. `ingress_stream: true` prevents response buffering, and heartbeat comments keep proxies from considering an idle stream dead. The frontend reconnects automatically and falls back to 10-second REST polling. Vite emits relative asset URLs (`base: "./"`), the UI uses a single route, and API URLs are resolved against `document.baseURI`, so no code assumes `/` is the public prefix.
 
-The app listens on container-internal port 8099 for authenticated Ingress, but publishes no host port. HTTP requests are accepted only from the Supervisor Ingress proxy (`172.30.32.2`) and container loopback for the Docker health check. A future companion integration will need an explicit authenticated bridge or another deliberately approved internal channel rather than weakening this boundary.
+The app listens on container-internal port 8099 but publishes no host port. Ingress traffic from the Supervisor proxy (`172.30.32.2`) and container-loopback health checks are trusted at the network boundary. Other clients can reach only `/api/*` and must present the dedicated bearer token generated in `/data/integration_credentials.json`.
+
+At startup the app announces service `youtube_audio_downloader` through the Supervisor discovery endpoint. The discovery payload contains the container hostname, internal port, API version, stable instance UUID, and bearer token. It is retried after transient failures and refreshed daily. This follows the Music Assistant app pattern: integrations receive the endpoint automatically and users neither configure nor expose the port or token.
 
 ### Frontend design system
 
@@ -34,7 +36,7 @@ The UI bundles Lit and the public `@home-assistant/webawesome` package used by t
 
 Only HTTPS URLs on an exact allowlist of YouTube hosts are accepted. Video IDs are parsed structurally, playlist-only URLs are rejected, URL length is bounded, and active video IDs are unique. Thumbnail retrieval accepts only public DNS results and bounded HTTPS responses. Output configuration is normalized beneath `/media`; user input cannot alter it. Filenames remove control/path/device-name hazards while preserving Unicode. Final files are moved atomically from `/data/tmp` to `/media` after conversion and tagging.
 
-Ingress supplies authenticated-user headers. CORS is not enabled, the API has no host mapping, non-Ingress clients are rejected, and errors have stable codes without tracebacks.
+Ingress supplies authenticated-user headers. Companion-integration requests use constant-time bearer-token comparison. CORS is not enabled, the API has no host mapping, non-Ingress UI clients are rejected, and errors have stable codes without tracebacks. The token is stored with mode `0600`, included in App data backups, passed only through protected Supervisor discovery, and never logged.
 
 ### Multi-architecture and release
 

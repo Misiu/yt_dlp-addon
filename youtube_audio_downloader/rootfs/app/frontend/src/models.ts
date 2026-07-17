@@ -47,6 +47,8 @@ export interface HistoryPage {
 
 export interface Info {
   version: string;
+  api_version: number;
+  instance_id: string;
   yt_dlp_version: string;
   ffmpeg_version: string;
   architecture: string;

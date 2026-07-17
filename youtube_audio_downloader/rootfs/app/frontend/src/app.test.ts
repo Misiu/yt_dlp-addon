@@ -59,7 +59,7 @@ function mockApi(): void {
       return Promise.resolve({ state: "downloading", progress: 42, queue_length: 1, current: currentJob });
     if (path === "v1/queue") return Promise.resolve({ items: [{ ...currentJob, id: "queued", state: "queued" }] });
     if (path.startsWith("v1/history")) return Promise.resolve({ items: [{ ...currentJob, id: "done", state: "completed", finished_at: "2026-07-17T08:02:00Z", output_file: "youtube_audio/Example audio.mp3", file_size: 5000000 }], page: 1, page_size: 25, total: 1 });
-    if (path === "v1/info") return Promise.resolve({ version: "0.1.3", yt_dlp_version: "2026.7.4", ffmpeg_version: "installed", architecture: "amd64", output_directory: "youtube_audio", database: "/data/youtube_audio.db", queue_limit: 100 });
+    if (path === "v1/info") return Promise.resolve({ version: "0.1.4", api_version: 1, instance_id: "7ca8ca91-d0bd-4a99-af59-7ff59cc2be42", yt_dlp_version: "2026.7.4", ffmpeg_version: "installed", architecture: "amd64", output_directory: "youtube_audio", database: "/data/youtube_audio.db", queue_limit: 100 });
     if (path === "v1/downloads/batch" && options?.method === "POST") return Promise.resolve({ accepted: 1, items: [{ id: "new", state: "queued" }] });
     return Promise.resolve(undefined);
   });
@@ -103,7 +103,7 @@ describe("youtube-audio-app", () => {
     await (element as HTMLElement & { updateComplete: Promise<boolean> }).updateComplete;
 
     expect(element.shadowRoot?.querySelector("wa-progress-bar")?.getAttribute("value")).toBe("72.8");
-    expect(element.shadowRoot?.textContent).toContain("7.3 MB");
+    expect(element.shadowRoot?.querySelector(".current-state")?.textContent).toBe("Downloading");
   });
 
   it("validates and submits multiple URLs with the stable batch request shape", async () => {

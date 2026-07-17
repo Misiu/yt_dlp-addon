@@ -48,7 +48,7 @@ YouTube Audio Downloader is a Home Assistant App (the feature was formerly calle
 7. Enable **Show in sidebar** on the app Info page if you want a permanent **YouTube Audio** sidebar entry.
 8. Click **Open Web UI** or use that sidebar entry.
 
-Version 0.1.3 is marked **experimental** until its Ingress, AppArmor, backup, download, and update paths have been verified on a real Home Assistant OS test instance.
+Version 0.1.4 is marked **experimental** until its Ingress, AppArmor, backup, download, integration discovery, and update paths have been verified on a real Home Assistant OS test instance.
 
 To add it manually, open the App store repository dialog and enter:
 
@@ -81,11 +81,12 @@ Open the Web UI, paste one link or multiple links (one per line), and select **A
 
 Ingress-relative endpoints are under `./api/v1`; health is at `./api/health`. The main operations are `POST /api/v1/downloads`, `GET /api/v1/status`, `GET /api/v1/queue`, paged `GET /api/v1/history`, cancellation/removal endpoints, read-only config/info, and `GET /api/v1/events` for SSE. See the [complete API documentation](youtube_audio_downloader/DOCS.md#rest-api).
 
-Port 8099 is internal to the container and is not published in the App Network panel. It accepts application traffic only from the authenticated Supervisor Ingress proxy; loopback is permitted for the container health check. Users do not configure or expose it, and CORS is intentionally absent. A future companion integration will use a deliberately authenticated internal channel.
+Port 8099 is internal to the container and is not published in the App Network panel. Users do not configure or expose it. The Supervisor discovery payload gives the companion integration the container hostname, this internal port, a stable instance ID, API version, and a dedicated bearer token. Ingress and loopback health checks retain their existing trusted paths; every other API client must authenticate. CORS is intentionally absent.
 
 ## Storage
 
 - `/data/youtube_audio.db`: durable jobs/history, included in the App data area.
+- `/data/integration_credentials.json`: stable instance ID and companion-integration token; generated automatically and never logged.
 - `/data/tmp`: bounded intermediate files; stale entries are cleaned after 24 hours.
 - `/media/<output_directory>`: final MP3 library, outside the App data directory.
 
