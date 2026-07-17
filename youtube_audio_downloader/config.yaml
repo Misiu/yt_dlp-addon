@@ -1,5 +1,5 @@
 name: YouTube Audio Downloader
-version: "0.1.0"
+version: "0.1.1"
 slug: youtube_audio_downloader
 description: Download authorized YouTube audio as tagged MP3 files
 url: https://github.com/Misiu/yt_dlp-app
@@ -22,7 +22,7 @@ options:
   history_limit: 100
   overwrite_existing: false
 schema:
-  output_directory: str(1,200)
+  output_directory: str
   mp3_quality: list(128|192|256|320)
   history_limit: int(0,10000)
   overwrite_existing: bool

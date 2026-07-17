@@ -48,7 +48,7 @@ YouTube Audio Downloader is a Home Assistant App (the feature was formerly calle
 7. Enable **Show in sidebar** on the app Info page if you want a permanent **YouTube Audio** sidebar entry.
 8. Click **Open Web UI** or use that sidebar entry.
 
-Version 0.1.0 is marked **experimental** until its Ingress, AppArmor, backup, download, and update paths have been verified on a real Home Assistant OS test instance.
+Version 0.1.1 is marked **experimental** until its Ingress, AppArmor, backup, download, and update paths have been verified on a real Home Assistant OS test instance.
 
 To add it manually, open the App store repository dialog and enter:
 
