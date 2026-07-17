@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "youtube-audio-downloader"
+version = "0.1.0"
+description = "Backend for the YouTube Audio Downloader Home Assistant App"
+requires-python = ">=3.12"
+dependencies = [
+  "aiosqlite==0.22.1",
+  "fastapi==0.139.2",
+  "httpx==0.28.1",
+  "mutagen==1.48.1",
+  "pillow==12.3.0",
+  "pydantic==2.13.4",
+  "uvicorn==0.51.0",
+  "yt-dlp[default]==2026.7.4",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy==2.3.0",
+  "pip-audit==2.10.1",
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "pytest-cov==7.1.0",
+  "pyyaml==6.0.3",
+  "ruff==0.15.22",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["youtube_audio_downloader/rootfs/app/backend/youtube_audio"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+asyncio_mode = "auto"
+pythonpath = ["youtube_audio_downloader/rootfs/app/backend"]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "S", "RUF"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S108"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["youtube_audio"]
+mypy_path = "youtube_audio_downloader/rootfs/app/backend"
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["mutagen.*", "PIL.*"]
+ignore_missing_imports = true

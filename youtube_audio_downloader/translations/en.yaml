@@ -1,0 +1,13 @@
+configuration:
+  output_directory:
+    name: Output directory
+    description: Folder below /media. An absolute /media path is also accepted and validated.
+  mp3_quality:
+    name: MP3 bitrate
+    description: Output encoding bitrate in kbit/s; it cannot improve source quality.
+  history_limit:
+    name: History limit
+    description: Maximum number of terminal job records retained in the app database.
+  overwrite_existing:
+    name: Overwrite existing files
+    description: Replace a same-named MP3; otherwise append a numeric suffix.

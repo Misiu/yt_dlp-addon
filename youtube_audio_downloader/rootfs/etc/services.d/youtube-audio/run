@@ -1,0 +1,7 @@
+#!/usr/bin/with-contenv bashio
+exec uvicorn youtube_audio.main:create_app \
+  --app-dir /app/backend \
+  --factory \
+  --host 0.0.0.0 \
+  --port 8099 \
+  --no-server-header

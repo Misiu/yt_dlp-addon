@@ -1,0 +1,47 @@
+name: Build images
+
+on:
+  pull_request:
+    paths:
+      - youtube_audio_downloader/**
+      - .github/workflows/build.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - id: info
+        uses: home-assistant/actions/helpers/info@master
+        with:
+          path: ./youtube_audio_downloader
+      - id: matrix
+        uses: home-assistant/builder/actions/prepare-multi-arch-matrix@2026.06.0
+        with:
+          architectures: ${{ steps.info.outputs.architectures }}
+          image-name: youtube-audio-downloader
+          registry-prefix: ghcr.io/misiu
+
+  build:
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - uses: home-assistant/builder/actions/build-image@2026.06.0
+        with:
+          arch: ${{ matrix.arch }}
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+          context: ./youtube_audio_downloader
+          image: ${{ matrix.image }}
+          image-tags: test
+          push: false
+          version: 0.1.0

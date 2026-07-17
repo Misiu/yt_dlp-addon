@@ -1,0 +1,13 @@
+extends: default
+
+ignore: |
+  .venv/
+  youtube_audio_downloader/rootfs/app/frontend/node_modules/
+  youtube_audio_downloader/rootfs/app/frontend/dist/
+
+rules:
+  document-start: disable
+  line-length:
+    max: 200
+  truthy:
+    allowed-values: ["true", "false", "on"]
