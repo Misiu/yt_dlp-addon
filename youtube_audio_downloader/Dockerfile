@@ -7,7 +7,7 @@ RUN npm ci --ignore-scripts
 COPY rootfs/app/frontend/ ./
 RUN npm run check && npm test && npm run build
 
-FROM ghcr.io/home-assistant/base:3.23
+FROM ghcr.io/home-assistant/base:3.24
 
 ARG BUILD_VERSION=0.1.0
 ARG BUILD_ARCH
