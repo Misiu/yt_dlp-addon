@@ -7,15 +7,11 @@ image: ghcr.io/misiu/youtube-audio-downloader
 arch:
   - amd64
   - aarch64
-startup: application
-boot: auto
 init: false
 ingress: true
-ingress_port: 8099
 ingress_stream: true
 panel_icon: mdi:music-box-multiple
 panel_title: YouTube Audio
-watchdog: http://[HOST]:[PORT:8099]/api/health
 map:
   - type: media
     read_only: false
@@ -30,4 +26,3 @@ schema:
   history_limit: int(0,10000)
   overwrite_existing: bool
 backup: cold
-stage: stable
